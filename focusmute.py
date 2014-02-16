@@ -19,6 +19,7 @@ xprop_focused = getoutput('xprop -id '+win_id)
 for l in xprop_focused.splitlines():
     if l.startswith('_NET_WM_PID'):
         pid = l.split()[-1]
+        break
 inputs = getoutput('pacmd list-sink-inputs')
 inputs = inputs.split('\n    index: ')
 if len(inputs) <= 1:

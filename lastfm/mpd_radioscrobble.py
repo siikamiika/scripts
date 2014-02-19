@@ -3,6 +3,7 @@ import socket
 import time
 import sys
 import pylast
+from datetime import datetime
 
 try:
     with open('apikey.secret', 'r') as apikey:
@@ -60,22 +61,23 @@ def track(currentsong):
         return
 
 def scrobble(scrobbler, track):
+    track_args = dict(
+            artist=track['Artist'],
+            title=track['Title'],
+            timestamp=track['time']
+        )
+    scrobble_info = '{0} scrobbled: {1} - {2}'.format(
+            datetime.now().replace(microsecond=0),
+            track['Artist'], track['Title']
+        )
     try:
-        scrobbler.scrobble(
-                artist=track['Artist'],
-                title=track['Title'],
-                timestamp=track['time']
-            )
-        print('scrobbled: {0} - {1}'.format(track['Artist'], track['Title']))
+        scrobbler.scrobble(**track_args)
+        print(scrobble_info)
     except Exception as e:
         print('{}, attempting reauth...'.format(e))
         scrobbler = auth()
-        scrobbler.scrobble(
-                artist=track['Artist'],
-                title=track['Title'],
-                timestamp=track['time']
-            )
-        print('scrobbled: {0} - {1}'.format(track['Artist'], track['Title']))
+        scrobbler.scrobble(**track_args)
+        print(scrobble_info)
         return scrobbler
 
 if __name__ == '__main__':

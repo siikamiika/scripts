@@ -1,4 +1,6 @@
 *~
 *.swp
 *.secret
+__pycache__/
+*.py[cod]
 

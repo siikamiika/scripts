@@ -1,0 +1,40 @@
+#!/bin/bash
+
+############################################################
+# original script: https://gist.github.com/hdclark/1127228 #
+# modified for my needs                                    #
+############################################################
+
+# you can queue multiple links 
+while (( "$#" )) ;
+  do
+	# get title
+	title=$(youtube-dl -e -q "$1")
+	echo "Title: $title"
+
+	#Make the FIFO.
+	youtubefifo="$RANDOM$RANDOM$RANDOM$RANDOM$RANDOM.fifo"
+	mkfifo "./$youtubefifo"
+
+	#Dump file into FIFO (ie: fill buffer into FIFO.)
+	#youtube-dl -q -f 18 -o "./$youtubefifo" "$1"  & 
+	youtube-dl -q  -o "./$youtubefifo" "$1"  &
+
+	#Check that no errors have occured.
+	ytdl_pid=$!                            #The process id of the previously run youtube-dl.
+	sleep 2                                #Wait for youtube-dl to either die or wait around.
+
+	if ps -ef | grep " $ytdl_pid " | grep -v grep #Check if youtube-dl is still waiting.
+		then
+		#Play it with mpv
+		mpv -cache 65535 -cache-min 1 --title="$title" "./$youtubefifo"
+	fi
+
+	#Remove the FIFO and kill youtube-dl if it is still running
+	kill $ytdl_pid > /dev/null 2>&1
+	rm "./$youtubefifo"
+ 
+    shift
+done
+ 
+exit

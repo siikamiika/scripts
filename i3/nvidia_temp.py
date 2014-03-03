@@ -14,7 +14,7 @@ class NvGpuTemp(IntervalModule):
         "limit_crit",
     )
 
-    format = "{gpu_tmp}°"
+    format = "{gpu_temp}°"
     color = "#FFFFFF"
     color_high = "#FFFF00"
     color_crit = "#FF0000"
@@ -36,6 +36,6 @@ class NvGpuTemp(IntervalModule):
             color = self.color_high
 
         self.output = {
-            "full_text": self.format.format(gpu_tmp=tmp),
+            "full_text": self.format.format(gpu_temp=tmp),
             "color": color,
         }

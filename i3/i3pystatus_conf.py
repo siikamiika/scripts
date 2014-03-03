@@ -2,67 +2,87 @@ from i3pystatus import Status
 from colored_mpd import MPD
 from openweather import Weather
 from pavutoggle import PulseAudio
-from gpu_temp import NvGpuTemp
+from nvidia_temp import NvGpuTemp
+#from nvidia import GpuInfo
 from colored_load import Load
 from colored_cpu import CpuUsage
+from clockv2 import Clock
 
 status = Status(standalone=True)
 
+NVIDIA = "#619701"
+INTEL  = "#0860A7"
+I3BLUE = "#285577"
+TEMP_OK = "#05A600"
+
 status.register(PulseAudio,
     format="♪{volume}",
+    color=I3BLUE,
+    )
+
+status.register(Clock,
+    format="%X",
     #color="#FFFFFF",
     )
 
-status.register("clock",
-    format="%a %-d %b %Y %X Week %V",
+status.register(Clock,
+    format="%a %-d %b %Y, Week %V",
+    interval=10,
+    color=I3BLUE,
     )
 
-status.register(Weather,
-    location="Turku,fi",
-    #color="#FFFFFF",
-    #format="{location}: {current_temp} °C, {description}",
+#status.register(Weather,
+#    location="Turku,fi",
+#    #color=I3BLUE,
+#    #format="{location}: {current_temp} °C, {description}",
+#    )
+
+status.register(CpuUsage,
+    format="{usage:02}%",
+    color=INTEL,
+    )
+
+status.register(Load,
+    format="{avg1} {avg5} {avg15}",
+    color=INTEL,
     )
 
 status.register("temp",
     format="{temp:.0f}°",
     high_factor=0.5,
-    color="#05A600",
-    color_critical="#A60700",
-    )
-
-status.register(CpuUsage,
-    format="{usage:02}%",
-    color="#0860A7",
-    )
-
-status.register(Load,
-    format="{avg1} {avg5} {avg15}",
-    color="#0860A7",
+    color=TEMP_OK,
     )
 
 status.register("text",
     text="i5 3550:",
-    color="#0860A7",
+    color=INTEL,
     )
 
+# status.register(GpuInfo,
+#     format="fan: {gpucurrentfanspeed}% "
+#            "VRAM: {useddedicatedgpumemory}MiB/{totaldedicatedgpumemory}MiB",
+#     color=NVIDIA,
+#     )
+
 status.register(NvGpuTemp,
-    #format="{gpu_tmp}°",
-    color="#05A600",
+    #format="{gpu_temp}°",
+    color=TEMP_OK,
     )
 
 status.register("text",
     text="GTX 760:",
-    color="#619701",
+    color=NVIDIA,
     )
 
 status.register(MPD,
-    format="[{artist} - ]{title} {status}",
+    format="[{artist} - ]{title} {status} ♪{volume}",
     status={
         "pause": "▷",
         "play": "▶",
         "stop": "◾",
     },
-    color="#285577",
+    color=I3BLUE,
     )
 
 status.run()
+

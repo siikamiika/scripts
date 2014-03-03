@@ -4,6 +4,8 @@ import time
 import sys
 import pylast
 from datetime import datetime
+from html.parser import HTMLParser
+hp = HTMLParser()
 
 try:
     with open('apikey.secret', 'r') as apikey:
@@ -46,8 +48,8 @@ def track(currentsong):
                 for l in currentsong.decode().strip().splitlines()[:-1]
             )
 
-        song_dict['time'] = int(time.time())
-        if not song_dict.get('Artist') or not song_dict.get('Title'):
+        song_dict['timestamp'] = int(time.time())
+        if not song_dict.get('Artist'):
             if ' - ' in str(song_dict.get('Title')):
                 song_dict['Artist'], song_dict['Title'] = \
                     song_dict.get('Title').split(' - ', 1)
@@ -61,10 +63,17 @@ def track(currentsong):
         return
 
 def scrobble(scrobbler, track):
+    if not (track['Artist'] or track['Title']):
+        return
     track_args = dict(
-            artist=track['Artist'],
-            title=track['Title'],
-            timestamp=track['time']
+            artist=hp.unescape(track['Artist']),
+            title=hp.unescape(track['Title']),
+            album=track.get('Album'),
+            album_artist=track.get('AlbumArtist'),
+            duration=track.get('Time'),
+            track_number=track['Track'].split('/')[0] if track.get('Track')
+                         else None,
+            timestamp=track['timestamp']
         )
     scrobble_info = '{0} scrobbled: {1} - {2}'.format(
             datetime.now().replace(microsecond=0),

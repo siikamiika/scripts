@@ -63,7 +63,7 @@ def track(currentsong):
         return
 
 def scrobble(scrobbler, track):
-    if not (track['Artist'] or track['Title']):
+    if not (track['Artist'] and track['Title']):
         return
     track_args = dict(
             artist=hp.unescape(track['Artist']),

@@ -23,7 +23,6 @@ function string.split(str, delim, maxsplit)
         end
     end
     table.insert(result, buffer)
-    print(utils.format_json(result))
     return result
 end
 

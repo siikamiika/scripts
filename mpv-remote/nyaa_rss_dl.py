@@ -57,6 +57,7 @@ def main():
     for item in reversed(items):
         if os.path.isfile(item['filename']):
             break
+        print(item['filename'])
         urlretrieve(item['torrent_url'], item['filename'])
         os.utime(item['filename'], (item['timestamp'],) * 2)
 

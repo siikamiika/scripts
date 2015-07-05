@@ -1,14 +1,6 @@
-local utils = require 'mp.utils'
+require "shared.helpers"
 
 HOST = "http://localhost:8888"
-
--- function string.starts(String,Start)
---    return string.sub(String,1,string.len(Start))==Start
--- end
-
-function string.ends(String,End)
-   return End=='' or string.sub(String,-string.len(End))==End
-end
 
 mp.add_hook("on_load", 50, function ()
     local fn = mp.get_property("stream-open-filename")

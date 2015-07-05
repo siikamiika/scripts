@@ -8,6 +8,25 @@ function string.ends(String,End)
    return End=='' or string.sub(String,-string.len(End))==End
 end
 
+function string.split(str, delim, maxsplit)
+    local result = {}
+    local buffer = ""
+    local splits = 0
+    local max_reached = false
+    for c in str:gmatch(".") do
+        if splits ~= maxsplit and c == delim then
+            table.insert(result, buffer)
+            buffer = ""
+            splits = splits + 1
+        else
+            buffer = buffer..c
+        end
+    end
+    table.insert(result, buffer)
+    print(utils.format_json(result))
+    return result
+end
+
 function trim(s)
     return s:match'^%s*(.*%S)' or ''
 end

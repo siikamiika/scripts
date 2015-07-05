@@ -16,12 +16,7 @@ function parse_titles(m3u_file)
     for line in file_content:gmatch("[^\r\n]+") do
         local line = trim(line)
         if string.starts(line, "#EXTINF") then
-            local extinf_table = {}
-            for extinf in line:gmatch("[^,]+") do
-                table.insert(extinf_table, extinf)
-            end
-            table.remove(extinf_table, 1)
-            local title = table.concat(extinf_table, "")
+            local title = string.split(line, ",", 1)[2] or ""
             table.insert(title_table, playlist_counter, title)
         elseif not ((line == "") or string.starts(line, "#")) then
             playlist_counter = playlist_counter + 1

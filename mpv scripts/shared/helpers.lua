@@ -1,4 +1,5 @@
-local utils = require 'mp.utils'
+utils = require "mp.utils"
+msg = require "mp.msg"
 
 function string.starts(String,Start)
    return string.sub(String,1,string.len(Start))==Start
@@ -12,7 +13,6 @@ function string.split(str, delim, maxsplit)
     local result = {}
     local buffer = ""
     local splits = 0
-    local max_reached = false
     for c in str:gmatch(".") do
         if splits ~= maxsplit and c == delim then
             table.insert(result, buffer)
@@ -30,7 +30,13 @@ function trim(s)
     return s:match'^%s*(.*%S)' or ''
 end
 
-local function exec(args)
+function Set(list)
+    local set = {}
+    for _, l in ipairs(list) do set[l] = true end
+    return set
+end
+
+function exec(args)
     local ret = utils.subprocess({args = args})
     return ret.status, ret.stdout, ret
 end

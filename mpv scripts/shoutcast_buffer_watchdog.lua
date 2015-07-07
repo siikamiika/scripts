@@ -1,3 +1,5 @@
+require "shared.helpers"
+
 local timer = nil
 
 function check_buffer()
@@ -8,9 +10,14 @@ function check_buffer()
 end
 
 mp.register_event("file-loaded", function ()
-    local metadata = mp.get_property("metadata")
-    if metadata and metadata:lower():find("shoutcast") then
-        timer = mp.add_periodic_timer(1, check_buffer)
+    local metadata = utils.parse_json(mp.get_property("metadata"))
+    if metadata then
+        for k, _ in pairs(metadata) do
+            if k:lower():find("icy-") then
+                timer = mp.add_periodic_timer(1, check_buffer)
+                break
+            end
+        end
     elseif timer then
         timer:stop()
         timer = nil

@@ -10,16 +10,17 @@ function check_buffer()
 end
 
 mp.register_event("file-loaded", function ()
-    local metadata = utils.parse_json(mp.get_property("metadata"))
-    if metadata then
-        for k, _ in pairs(metadata) do
-            if k:lower():find("icy-") then
-                timer = mp.add_periodic_timer(1, check_buffer)
-                break
-            end
-        end
-    elseif timer then
+    if timer then
         timer:stop()
         timer = nil
+    end
+    local metadata = utils.parse_json(mp.get_property("metadata"))
+    for k, _ in pairs(metadata or {}) do
+        k = tostring(k)
+        if k:lower():find("icy-") then
+            msg.info("shoutcast/icecast stream detected ("..k.." in metadata)")
+            timer = mp.add_periodic_timer(1, check_buffer)
+            break
+        end
     end
 end)

@@ -1,7 +1,6 @@
 require "shared.helpers"
 
 local conf_read = false
-local conf = {}
 
 local allowed_properties = Set{
     "vid",
@@ -15,14 +14,8 @@ local allowed_properties = Set{
     "video-aspect"
 }
 
-function set_property_flo(property, value)
-    mp.set_property("file-local-options/"..property, value)
-end
-
-function set_properties()
-    for p, v in pairs(conf) do
-        set_property_flo(p, v)
-    end
+function set_option(property, value)
+    mp.set_property("options/"..property, value)
 end
 
 mp.add_hook("on_load", 50, function ()
@@ -35,15 +28,13 @@ mp.add_hook("on_load", 50, function ()
             if not string.starts(line, "#") then
                 line = string.split(line, "=", 1)
                 if line[1] and line[2] and allowed_properties[line[1]] then
-                    conf[line[1]] = line[2]
+                    set_option(line[1], line[2])
+                    msg.info(line[1], "set to", line[2])
                 else
-                    msg.info("property not allowed: "..line[1])
+                    msg.info("property not allowed:", line[1])
                 end
             end
         end
-        set_properties()
         conf_read = true
-    else
-        set_properties()
     end
 end)

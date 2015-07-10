@@ -16,10 +16,10 @@ function get_r_a_dio_info()
     local data = readAllHTTP("https://r-a-d.io/api")
     -- something fails when parsing the whole json...
     local ebj = extract_broken_json
-    local starttime = ebj(data, "start_time")
-    local endtime = ebj(data, "end_time")
-    local curtime = ebj(data, "current")
-    return ebj(data, "np"), ebj(data, "djname"), ebj(data, "listeners"), endtime-starttime, curtime-starttime
+    local starttime = tonumber(ebj(data, "main,start_time"))
+    local endtime = tonumber(ebj(data, "main,end_time"))
+    local curtime = tonumber(ebj(data, "main,current"))
+    return ebj(data, "main,np"), ebj(data, "main,dj,djname"), ebj(data, "main,listeners"), endtime-starttime, curtime-starttime
 end
 
 function update_osd_text()

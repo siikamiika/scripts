@@ -14,7 +14,7 @@ mp.register_event("file-loaded", function ()
         timer:stop()
         timer = nil
     end
-    local metadata = utils.parse_json(mp.get_property("metadata"))
+    local metadata = mp.get_property_native("metadata")
     for k, _ in pairs(metadata or {}) do
         k = tostring(k)
         if k:lower():starts("icy-") then

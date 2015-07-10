@@ -13,17 +13,8 @@ end
 
 function get_dj()
     local data = readAllHTTP("https://r-a-d.io/api")
-    local dj_name = nil
     -- something fails when parsing the whole json...
-    for djname in data:gmatch("[^%\\](\"djname\":\".-[^%\\]\")") do
-        dj_name = djname
-    end
-    if dj_name then
-        dj_name = utils.parse_json("{"..dj_name.."}")
-        return dj_name["djname"]
-    else
-        return nil
-    end
+    return extract_broken_json(data, "djname")
 end
 
 function update_osd_text(metadata)

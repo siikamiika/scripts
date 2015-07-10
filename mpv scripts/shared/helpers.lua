@@ -30,6 +30,19 @@ function string.trim(s)
     return s:match'^%s*(.*%S)' or ''
 end
 
+function extract_broken_json(str, key)
+    local last_match = nil
+    for match in str:gmatch("[^%\\](\""..key.."\"%s-:%s-\"?.-\"?)%s-[,}]") do
+        last_match = match
+    end
+    if last_match then
+        last_match = utils.parse_json("{"..last_match.."}")
+        return last_match[key]
+    else
+        return nil
+    end
+end
+
 function Set(list)
     local set = {}
     for _, l in ipairs(list) do set[l] = true end

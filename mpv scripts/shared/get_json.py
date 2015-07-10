@@ -8,7 +8,7 @@ def main():
     keys = args[1].split(',')
     for key in keys:
         data = data[key]
-    sys.stdout.write(str(data))
+    sys.stdout.write(json.dumps(data))
 
 if __name__ == '__main__':
     main()

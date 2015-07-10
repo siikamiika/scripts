@@ -41,7 +41,7 @@ function extract_broken_json(str, keys)
     path = utils.join_path(path, "get_json.py")
     local args = {"python", path, str, keys}
     local ret = utils.subprocess({args = args})
-    return ret.stdout
+    return utils.parse_json(ret.stdout)
 end
 
 function Set(list)

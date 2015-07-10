@@ -26,7 +26,7 @@ function string.split(str, delim, maxsplit)
     return result
 end
 
-function trim(s)
+function string.trim(s)
     return s:match'^%s*(.*%S)' or ''
 end
 

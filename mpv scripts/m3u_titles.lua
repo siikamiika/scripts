@@ -7,18 +7,18 @@ local titles = {}
 function parse_titles(m3u_file)
     local title_table = {}
     local file_content = ""
-    if string.starts(m3u_file, "http://") or string.starts(m3u_file, "https://") then
+    if m3u_file:starts("http://") or m3u_file:starts("https://") then
         file_content = readAllHTTP(m3u_file)
     else
         file_content = readAll(m3u_file)
     end
     local playlist_counter = 1
     for line in file_content:gmatch("[^\r\n]+") do
-        local line = trim(line)
-        if string.starts(line, "#EXTINF") then
-            local title = string.split(line, ",", 1)[2] or ""
+        local line = line:trim()
+        if line:starts("#EXTINF") then
+            local title = line:split(",", 1)[2] or ""
             table.insert(title_table, playlist_counter, title)
-        elseif not ((line == "") or string.starts(line, "#")) then
+        elseif not ((line == "") or line:starts("#")) then
             playlist_counter = playlist_counter + 1
         end
     end
@@ -27,7 +27,7 @@ end
 
 function get_titles()
     local path = mp.get_property("path")
-    if string.ends(path, ".m3u") then
+    if path:ends(".m3u") then
         print("Getting titles from "..path)
         titles = parse_titles(path)
     end

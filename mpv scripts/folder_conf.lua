@@ -23,10 +23,11 @@ mp.add_hook("on_load", 50, function ()
         local path = mp.get_property("stream-open-filename")
         path = utils.join_path(utils.getcwd(), path)
         path = utils.split_path(path)
-        for line in readAll(utils.join_path(path, "mpv.conf")):gmatch("[^\r\n]+") do
-            local line = trim(line)
-            if not string.starts(line, "#") then
-                line = string.split(line, "=", 1)
+        path = utils.join_path(path, "mpv.conf")
+        for line in readAll(path):gmatch("[^\r\n]+") do
+            local line = line:trim()
+            if not line:starts("#") then
+                line = line:split("=", 1)
                 if line[1] and line[2] and allowed_properties[line[1]] then
                     set_option(line[1], line[2])
                     msg.info(line[1], "set to", line[2])

@@ -4,12 +4,12 @@ HOST = "http://localhost:8888"
 
 mp.add_hook("on_load", 50, function ()
     local fn = mp.get_property("stream-open-filename")
-    local magnet_idx = string.find(fn, "magnet:")
+    local magnet_idx = fn:find("magnet:")
     local torrent = nil
-    if string.ends(fn, ".torrent") then
+    if fn:ends(".torrent") then
         torrent = utils.join_path(utils.getcwd(), fn)
     elseif magnet_idx then
-        torrent = string.sub(fn, magnet_idx)
+        torrent = fn:sub(magnet_idx)
     end
     if torrent then
         mp.set_property("stream-open-filename", HOST.."/stream_torrent/"..torrent)

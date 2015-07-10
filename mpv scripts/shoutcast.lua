@@ -52,7 +52,6 @@ function periodic()
             if is_r_a_dio then
                 osd_title, dj, listeners, songlen, songpos = get_r_a_dio_info()
                 playertime = mp.get_time()
-                msg.info("R/a/dio dj: "..dj)
             else
                 osd_title = title
             end

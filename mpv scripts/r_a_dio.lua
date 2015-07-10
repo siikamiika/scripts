@@ -25,7 +25,7 @@ end
 function update_osd_text()
     local songpos_ = math.floor(songpos + mp.get_time() - playertime)
     local songpos_text = ("%02d:%02d"):format(math.floor(songpos_ / 60), songpos_ % 60)
-    local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songpos % 60)
+    local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songlen % 60)
     osd_text = "R/a/dio ("..dj..")\n"..
         r_title.."\n"..
         ("%s/%s"):format(songpos_text, songlen_text).."\n"..

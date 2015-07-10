@@ -2,6 +2,7 @@ require "shared.helpers"
 
 local check_title_timer = nil
 local old_title = nil
+local r_title, dj, listeners, songlen, songpos, playertime = nil
 local osd_text = ""
 
 function show_osd_text()
@@ -11,21 +12,24 @@ function show_osd_text()
     mp.command(table.concat(cmd, " "))
 end
 
-function get_dj()
+function get_r_a_dio_info()
     local data = readAllHTTP("https://r-a-d.io/api")
     -- something fails when parsing the whole json...
-    return extract_broken_json(data, "djname")
+    local ebj = extract_broken_json
+    local starttime = ebj(data, "start_time")
+    local endtime = ebj(data, "end_time")
+    local curtime = ebj(data, "current")
+    return ebj(data, "np"), ebj(data, "djname"), ebj(data, "listeners"), endtime-starttime, curtime-starttime
 end
 
-function update_osd_text(metadata)
-    if metadata and metadata["icy-title"] then
-        local title = metadata["icy-title"]
-        local djname = get_dj()
-        if djname then
-            msg.info("dj: "..djname)
-            osd_text = "R/a/dio ("..djname..")\n"..title
-        end
-    end
+function update_osd_text()
+    local songpos_ = math.floor(songpos + mp.get_time() - playertime)
+    local songpos_text = ("%02d:%02d"):format(math.floor(songpos_ / 60), songpos_ % 60)
+    local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songpos % 60)
+    osd_text = "R/a/dio ("..dj..")\n"..
+        r_title.."\n"..
+        ("%s/%s"):format(songpos_text, songlen_text).."\n"..
+        ("%s listeners"):format(listeners)
 end
 
 function check_title()
@@ -36,12 +40,15 @@ function check_title()
     end
     if title then
         if title ~= old_title then
-            update_osd_text(metadata)
+            r_title, dj, listeners, songlen, songpos = get_r_a_dio_info()
+            playertime = mp.get_time()
+            msg.info("dj: "..dj)
             old_title = title
         end
     else
         osd_text = ""
     end
+    update_osd_text()
     show_osd_text()
 end
 

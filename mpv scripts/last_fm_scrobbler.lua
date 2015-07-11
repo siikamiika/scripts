@@ -8,10 +8,15 @@ scrobbler_path = utils.split_path(scrobbler_path)
 scrobbler_path = utils.join_path(scrobbler_path, "shared/last_fm_scrobbler.py")
 local fj = utils.format_json
 
+function debug_msg(json)
+    local json = utils.parse_json(json)
+    msg.info(json)
+end
+
 function scrobble()
     local args = {"python", scrobbler_path, "scrobble", fj(artist), fj(title), fj(album), fj(length)}
     local result = utils.subprocess({args = args})
-    msg.info(result.stdout:trim())
+    debug_msg(result.stdout)
 end
 
 function publish_nowplaying()

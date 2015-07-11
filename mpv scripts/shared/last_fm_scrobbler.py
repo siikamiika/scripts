@@ -17,6 +17,9 @@ except Exception as e:
     print_exc()
     sys.exit()
 
+def debug_msg(text):
+    print(json.dumps(text))
+
 def auth():
     return pylast.LastFMNetwork(
         api_key=API_KEY,
@@ -36,12 +39,12 @@ def scrobble(scrobbler, artist, title, album=None, duration=None, timestamp=None
         )
     try:
         scrobbler.scrobble(**track_args)
-        print(result)
+        debug_msg(result)
     except Exception as e:
-        print('{}, attempting reauth...'.format(e))
+        debug_msg('{}, attempting reauth...'.format(e))
         scrobbler = auth()
         scrobbler.scrobble(**track_args)
-        print(result)
+        debug_msg(result)
     return scrobbler
 
 def publish_nowplaying(scrobbler, artist, title):

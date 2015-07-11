@@ -9,7 +9,8 @@ local osd_text = ""
 function show_osd_text()
     local cmd = {}
     cmd[#cmd+1] = "show-text"
-    cmd[#cmd+1] = "\"${osd-ass-cc/0}{\\\\fs30}"..osd_text.."\""
+    local text = "${osd-ass-cc/0}{\\\\fs30}"..osd_text:gsub("\"", "\\\"")
+    cmd[#cmd+1] = "\""..text.."\""
     mp.command(table.concat(cmd, " "))
 end
 

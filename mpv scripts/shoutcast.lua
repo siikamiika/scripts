@@ -66,7 +66,7 @@ mp.register_event("file-loaded", function()
     mp.unobserve_property(check_buffer)
     mp.unobserve_property(on_metadata_update)
     if timer then
-        timer:stop()
+        timer:kill()
         timer = nil
         is_r_a_dio = false
     end

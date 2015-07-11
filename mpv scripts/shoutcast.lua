@@ -3,16 +3,8 @@ require "shared.helpers"
 local timer = nil
 local old_title = nil
 local is_r_a_dio = false
-local osd_title, dj, listeners, songlen, songpos, playertime = nil
-local osd_text = ""
-
-function show_osd_text()
-    local cmd = {}
-    cmd[#cmd+1] = "show-text"
-    local text = "${osd-ass-cc/0}{\\\\fs30}"..osd_text:gsub("\"", "\\\"")
-    cmd[#cmd+1] = "\""..text.."\""
-    mp.command(table.concat(cmd, " "))
-end
+local osd_title, dj, osd_text = ""
+local listeners, songlen, songpos, r_a_dio_info_fetch_time = 0
 
 function get_r_a_dio_info()
     local data = readAllHTTP("https://r-a-d.io/api")
@@ -21,12 +13,17 @@ function get_r_a_dio_info()
     local starttime = ebj(data, "main,start_time")
     local endtime = ebj(data, "main,end_time")
     local curtime = ebj(data, "main,current")
-    return ebj(data, "main,np"), ebj(data, "main,dj,djname"), ebj(data, "main,listeners"), endtime-starttime, curtime-starttime
+    osd_title = ebj(data, "main,np")
+    dj = ebj(data, "main,dj,djname")
+    listeners = ebj(data, "main,listeners")
+    songlen = endtime-starttime
+    songpos = curtime-starttime
+    r_a_dio_info_fetch_time = mp.get_time()
 end
 
 function update_osd_text()
     if is_r_a_dio then
-        local songpos_ = math.floor(songpos + mp.get_time() - playertime)
+        local songpos_ = math.floor(songpos + mp.get_time() - r_a_dio_info_fetch_time)
         local songpos_text = ("%02d:%02d"):format(math.floor(songpos_ / 60), songpos_ % 60)
         local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songlen % 60)
         osd_text = "R/a/dio ("..dj..")\n"..
@@ -36,40 +33,41 @@ function update_osd_text()
     else
         osd_text = osd_title
     end
+    local cmd = {}
+    cmd[#cmd+1] = "show-text"
+    local text = "${osd-ass-cc/0}{\\\\fs30}"..osd_text:gsub("\"", "\\\"")
+    cmd[#cmd+1] = "\""..text.."\""
+    mp.command(table.concat(cmd, " "))
 end
 
-function periodic()
-    local buffer_length = mp.get_property_native("demuxer-cache-duration")
+function check_buffer(_, buffer_length)
     if buffer_length and buffer_length > 9 then
         mp.command("seek 5")
     end
-    local metadata = mp.get_property_native("metadata")
+end
+
+function on_metadata_update(_, metadata)
     local title = nil
     if metadata then
         title = metadata["icy-title"]
     end
     if title then
-        if title ~= old_title then
-            if is_r_a_dio then
-                osd_title, dj, listeners, songlen, songpos = get_r_a_dio_info()
-                playertime = mp.get_time()
-            else
-                osd_title = title
-            end
-            old_title = title
+        if is_r_a_dio then
+            get_r_a_dio_info()
+        else
+            osd_title = title
         end
     else
-        osd_text = ""
+        osd_title = ""
     end
-    update_osd_text()
-    show_osd_text()
 end
 
 mp.register_event("file-loaded", function()
+    mp.unobserve_property(check_buffer)
+    mp.unobserve_property(on_metadata_update)
     if timer then
         timer:stop()
         timer = nil
-        old_title = nil
         is_r_a_dio = false
     end
     if mp.get_property("stream-open-filename"):find("r-a-d.io") then
@@ -80,7 +78,9 @@ mp.register_event("file-loaded", function()
         k = tostring(k)
         if k:lower():starts("icy-") then
             msg.info("shoutcast/icecast stream detected ("..k.." in metadata)")
-            timer = mp.add_periodic_timer(1, periodic)
+            mp.observe_property("demuxer-cache-duration", "number", check_buffer)
+            mp.observe_property("metadata", "native", on_metadata_update)
+            timer = mp.add_periodic_timer(1, update_osd_text)
             break
         end
     end

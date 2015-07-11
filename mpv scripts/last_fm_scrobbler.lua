@@ -35,7 +35,7 @@ function on_metadata(_, metadata)
     if artist and title then
         publish_nowplaying()
         if timer then timer:kill() end
-        timer = mp.add_timeout(math.min(240, length or 30 / 2), scrobble)
+        timer = mp.add_timeout(math.min(240, (length or 30) / 2), scrobble)
     end
 end
 

@@ -2,7 +2,7 @@ require "shared.helpers"
 
 local scrobbling = false
 local timer = nil
-local artist, title, album, length = nil
+local artist, title, album, length, timestamp = nil
 local scrobbler_path = script_path()
 scrobbler_path = utils.split_path(scrobbler_path)
 scrobbler_path = utils.join_path(scrobbler_path, "shared/last_fm_scrobbler.py")
@@ -14,7 +14,7 @@ function debug_msg(json)
 end
 
 function scrobble()
-    local args = {"python", scrobbler_path, "scrobble", fj(artist), fj(title), fj(album), fj(length)}
+    local args = {"python", scrobbler_path, "scrobble", fj(artist), fj(title), fj(album), fj(length), fj(timestamp)}
     local result = utils.subprocess({args = args})
     debug_msg(result.stdout)
 end
@@ -40,6 +40,7 @@ function on_metadata(_, metadata)
     end
     if artist and title then
         publish_nowplaying()
+        timestamp = os.time()
         timer = mp.add_timeout(math.min(240, (length or 60) / 2), scrobble)
     end
 end

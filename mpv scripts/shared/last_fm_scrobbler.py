@@ -59,7 +59,7 @@ def main():
 
     args = sys.argv[1:]
     if args[0] == 'scrobble':
-        scrobbler = scrobble(scrobbler, *[json.loads(a) for a in (args[1:] + ['null']*4)[:4]])
+        scrobbler = scrobble(scrobbler, *[json.loads(a) for a in (args[1:] + ['null']*3)[:5]])
     elif args[0] == 'np':
         publish_nowplaying(scrobbler, *[json.loads(a) for a in args[1:3]])
 

@@ -6,18 +6,18 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 $^!Space::
 IfWinNotActive, ahk_class mpv
-    ControlSend,, {Space}, ahk_class mpv
-Send ^!{Space}
+    Send ^!{Space}
+ControlSend,, {Space}, ahk_class mpv
 return
 
 $^!Up::
 IfWinNotActive, ahk_class mpv
-    ControlSend,, 0, ahk_class mpv
-Send ^!{Up}
+    Send ^!{Up}
+ControlSend,, 0, ahk_class mpv
 return
 
 $^!Down::
 IfWinNotActive, ahk_class mpv
-    ControlSend,, 9, ahk_class mpv
-Send ^!{Down}
+    Send ^!{Down}
+ControlSend,, 9, ahk_class mpv
 return

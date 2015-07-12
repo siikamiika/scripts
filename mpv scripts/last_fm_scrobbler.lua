@@ -26,6 +26,7 @@ end
 
 function on_metadata(_, metadata)
     if timer then timer:kill() end
+    if not metadata then return end
     local icy_title = metadata['icy-title']
     if icy_title then
         artist, title = icy_title:gmatch("(.+) %- (.+)")()
@@ -34,9 +35,10 @@ function on_metadata(_, metadata)
     else
         length = math.floor(mp.get_property_number("duration", 0))
         if length < 30 then return end
-        artist = metadata["artist"] or metadata["ARTIST"]
-        title = metadata["title"] or metadata["TITLE"]
-        album = metadata["album"] or metadata["ALBUM"]
+        for k, v in pairs(metadata) do metadata[k:lower()] = v end
+        artist = metadata["artist"]
+        title = metadata["title"]
+        album = metadata["album"]
     end
     if artist and title then
         publish_nowplaying()

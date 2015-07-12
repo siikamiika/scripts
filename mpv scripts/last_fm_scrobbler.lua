@@ -25,6 +25,7 @@ function publish_nowplaying()
 end
 
 function on_metadata(_, metadata)
+    if timer then timer:kill() end
     local icy_title = metadata['icy-title']
     if icy_title then
         artist, title = icy_title:gmatch("(.+) %- (.+)")()
@@ -39,8 +40,7 @@ function on_metadata(_, metadata)
     end
     if artist and title then
         publish_nowplaying()
-        if timer then timer:kill() end
-        timer = mp.add_timeout(math.min(240, (length or 30) / 2), scrobble)
+        timer = mp.add_timeout(math.min(240, (length or 60) / 2), scrobble)
     end
 end
 

@@ -32,8 +32,8 @@ function on_metadata(_, metadata)
         album = nil
         length = nil
     else
-        length = mp.get_property("duration")
-        if length and tonumber(length) < 30 then return end
+        length = math.floor(mp.get_property_number("duration", 0))
+        if length < 30 then return end
         artist = metadata["artist"] or metadata["ARTIST"]
         title = metadata["title"] or metadata["TITLE"]
         album = metadata["album"] or metadata["ALBUM"]
@@ -46,6 +46,7 @@ end
 
 function toggle_scrobbling()
     if scrobbling then
+        if timer then timer:kill() end
         mp.unobserve_property(on_metadata)
         mp.commandv("show-text", "scrobbling disabled")
     else

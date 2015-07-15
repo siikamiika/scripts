@@ -48,7 +48,7 @@ function check_buffer(_, buffer_length)
         local cache_used = mp.get_property_native("cache-used")
         local cache_seconds = cache_used / kilobyte_rate
         mp.set_property("speed", 100)
-        mp.add_timeout(0.05 + (cache_seconds / 100), function()
+        mp.add_timeout(0.08 + (cache_seconds / 100), function()
             mp.set_property("speed", 1)
         end)
     end

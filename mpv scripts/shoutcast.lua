@@ -44,8 +44,11 @@ end
 
 function check_buffer(_, buffer_length)
     if buffer_length and buffer_length > 9 then
+        local kilobyte_rate = mp.get_property_native("audio-bitrate") / 1000 / 8
+        local cache_used = mp.get_property_native("cache-used")
+        local cache_seconds = cache_used / kilobyte_rate
         mp.set_property("speed", 100)
-        mp.add_timeout(0.1, function()
+        mp.add_timeout(0.05 + (cache_seconds / 100), function()
             mp.set_property("speed", 1)
         end)
     end

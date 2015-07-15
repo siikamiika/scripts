@@ -6,12 +6,6 @@ local is_r_a_dio = false
 local osd_title, dj, osd_text = ""
 local listeners, songlen, songpos, r_a_dio_info_fetch_time = 0
 
-function ass(str)
-    local ass = mp.get_property_osd("osd-ass-cc/0")
-    local no_ass = mp.get_property_osd("osd-ass-cc/1")
-    return ass..str..no_ass
-end
-
 function get_r_a_dio_info()
     local data = readAllHTTP("https://r-a-d.io/api")
     -- something fails when parsing the whole json...
@@ -27,17 +21,37 @@ function get_r_a_dio_info()
     r_a_dio_info_fetch_time = mp.get_time()
 end
 
+function osd_title_highlight()
+    local artist_sep_start_idx, artist_sep_end_idx = osd_title:find(" %- ")
+    local parts = {}
+    if artist_sep_start_idx then
+        local artist = osd_title:sub(1, artist_sep_start_idx - 1)
+        parts[1] = colored(artist, "ff9696")
+        parts[2] = osd_title:sub(artist_sep_end_idx + 1)
+    else
+        parts[1] = osd_title
+    end
+    return table.concat(parts, " - ")
+end
+
+function r_a_dio_osd_text()
+    local songpos_ = math.floor(songpos + mp.get_time() - r_a_dio_info_fetch_time)
+    local songpos_text = ("%02d:%02d"):format(math.floor(songpos_ / 60), songpos_ % 60)
+    local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songlen % 60)
+
+    local lines = {}
+    lines[1] = ("R/a/dio (%s)"):format(colored(dj, "ff9696"))
+    lines[2] = osd_title_highlight()
+    lines[3] = ("%s/%s"):format(songpos_text, songlen_text)
+    lines[4] = ("%s listeners"):format(listeners)
+    return table.concat(lines, "\n")
+end
+
 function update_osd_text()
     if is_r_a_dio then
-        local songpos_ = math.floor(songpos + mp.get_time() - r_a_dio_info_fetch_time)
-        local songpos_text = ("%02d:%02d"):format(math.floor(songpos_ / 60), songpos_ % 60)
-        local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songlen % 60)
-        osd_text = "R/a/dio ("..dj..")\n"..
-            osd_title.."\n"..
-            ("%s/%s"):format(songpos_text, songlen_text).."\n"..
-            ("%s listeners"):format(listeners)
+        osd_text = r_a_dio_osd_text()
     else
-        osd_text = osd_title
+        osd_text = osd_title_highlight()
     end
     mp.osd_message(ass([[{\\fs30}]])..osd_text)
 end

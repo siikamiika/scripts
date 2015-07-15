@@ -70,3 +70,23 @@ function readAllHTTP(url)
     local status, content = exec(command)
     return content or ""
 end
+
+function ass(str)
+    local ass = mp.get_property_osd("osd-ass-cc/0")
+    local no_ass = mp.get_property_osd("osd-ass-cc/1")
+    return ass..str..no_ass
+end
+
+function white_ass()
+    return ass([[{\c&Hffffff&}]])
+end
+
+function colored(text, bgr, default)
+    local return_color = default
+    if return_color then
+        return_color = ass([[{\c&H]]..return_color..[[&}]])
+    else
+        return_color = white_ass()
+    end
+    return ass([[{\c&H]]..bgr..[[&}]])..text..return_color
+end

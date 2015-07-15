@@ -9,20 +9,24 @@ function string.ends(String,End)
    return End=='' or string.sub(String,-string.len(End))==End
 end
 
-function string.split(str, delim, maxsplit)
-    local result = {}
-    local buffer = ""
-    local splits = 0
-    for c in str:gmatch(".") do
-        if splits ~= maxsplit and c == delim then
-            table.insert(result, buffer)
-            buffer = ""
-            splits = splits + 1
-        else
-            buffer = buffer..c
-        end
+function string.split(str, delim, maxNb)
+    if str:find(delim) == nil then
+        return {str}
     end
-    table.insert(result, buffer)
+    if maxNb == nil or maxNb < 1 then
+        maxNb = 0
+    end
+    local result = {}
+    local pat = "(.-)" .. delim .. "()"
+    local nb = 0
+    local lastPos = 1
+    for part, pos in str:gmatch(pat) do
+        nb = nb + 1
+        result[nb] = part
+        lastPos = pos
+        if nb == maxNb then break end
+    end
+    result[nb + 1] = str:sub(lastPos)
     return result
 end
 

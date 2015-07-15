@@ -6,6 +6,12 @@ local is_r_a_dio = false
 local osd_title, dj, osd_text = ""
 local listeners, songlen, songpos, r_a_dio_info_fetch_time = 0
 
+function ass(str)
+    local ass = mp.get_property_osd("osd-ass-cc/0")
+    local no_ass = mp.get_property_osd("osd-ass-cc/1")
+    return ass..str..no_ass
+end
+
 function get_r_a_dio_info()
     local data = readAllHTTP("https://r-a-d.io/api")
     -- something fails when parsing the whole json...
@@ -33,11 +39,7 @@ function update_osd_text()
     else
         osd_text = osd_title
     end
-    local cmd = {}
-    cmd[#cmd+1] = "show-text"
-    local text = "${osd-ass-cc/0}{\\\\fs30}"..osd_text:gsub("\"", "\\\"")
-    cmd[#cmd+1] = "\""..text.."\""
-    mp.command(table.concat(cmd, " "))
+    mp.osd_message(ass([[{\\fs30}]])..osd_text)
 end
 
 function check_buffer(_, buffer_length)

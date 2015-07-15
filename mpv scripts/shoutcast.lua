@@ -44,7 +44,10 @@ end
 
 function check_buffer(_, buffer_length)
     if buffer_length and buffer_length > 9 then
-        mp.command("seek 5")
+        mp.set_property("speed", 100)
+        mp.add_timeout(0.1, function()
+            mp.set_property("speed", 1)
+        end)
     end
 end
 

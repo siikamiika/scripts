@@ -1,37 +1,34 @@
 utils = require "mp.utils"
 msg = require "mp.msg"
 
-function string.starts(String,Start)
-   return string.sub(String,1,string.len(Start))==Start
+function string:starts(Start)
+   return self:sub(1, Start:len()) == Start
 end
 
-function string.ends(String,End)
-   return End=='' or string.sub(String,-string.len(End))==End
+function string:ends(End)
+   return End == "" or self:sub(-End:len()) == End
 end
 
-function string.split(str, delim, maxNb)
-    if str:find(delim) == nil then
-        return {str}
-    end
-    if maxNb == nil or maxNb < 1 then
-        maxNb = 0
+function string:split(delim, max_splits)
+    if max_splits == nil or max_splits < 1 then
+        max_splits = 0
     end
     local result = {}
-    local pat = "(.-)" .. delim .. "()"
-    local nb = 0
-    local lastPos = 1
-    for part, pos in str:gmatch(pat) do
-        nb = nb + 1
-        result[nb] = part
-        lastPos = pos
-        if nb == maxNb then break end
+    local pattern = "(.-)"..delim.."()"
+    local splits = 0
+    local last_pos = 1
+    for part, pos in self:gmatch(pattern) do
+        splits = splits + 1
+        result[splits] = part
+        last_pos = pos
+        if splits == max_splits then break end
     end
-    result[nb + 1] = str:sub(lastPos)
+    result[splits + 1] = self:sub(last_pos)
     return result
 end
 
-function string.trim(s)
-    return s:match'^%s*(.*%S)' or ''
+function string:trim()
+    return self:match("^%s*(.*%S)") or ""
 end
 
 function script_path()

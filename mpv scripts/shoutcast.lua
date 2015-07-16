@@ -3,19 +3,21 @@ require "shared.helpers"
 local timer = nil
 local old_title = nil
 local is_r_a_dio = false
-local osd_title, dj, osd_text = ""
+local osd_title, dj, next_song, osd_text = ""
 local listeners, songlen, songpos, r_a_dio_info_fetch_time = 0
 
 function get_r_a_dio_info()
-    local data = readAllHTTP("https://r-a-d.io/api")
-    -- something fails when parsing the whole json...
-    local ebj = extract_broken_json
-    local starttime = ebj(data, "main,start_time")
-    local endtime = ebj(data, "main,end_time")
-    local curtime = ebj(data, "main,current")
-    osd_title = ebj(data, "main,np")
-    dj = ebj(data, "main,dj,djname")
-    listeners = ebj(data, "main,listeners")
+    local starttime, endtime, curtime = 0
+    local info = extract_broken_json("https://r-a-d.io/api",
+        "'main','start_time';"..
+        "'main','end_time';"..
+        "'main','current';"..
+        "'main','np';"..
+        "'main','djname';"..
+        "'main','listeners';"..
+        "'main','queue',0,'meta';"
+    , true)
+    starttime, endtime, curtime, osd_title, dj, listeners, next_song = unpack(info)
     songlen = endtime-starttime
     songpos = curtime-starttime
     r_a_dio_info_fetch_time = mp.get_time()
@@ -40,10 +42,11 @@ function r_a_dio_osd_text()
     local songlen_text = ("%02d:%02d"):format(math.floor(songlen / 60), songlen % 60)
 
     local lines = {}
-    lines[1] = ("R/a/dio (%s)"):format(colored(dj, "ff9696"))
+    lines[1] = ("%sR/a/dio (%s)"):format(ass([[{\fs30}]]), colored(dj, "ff9696"))
     lines[2] = osd_title_highlight()
     lines[3] = ("%s/%s"):format(songpos_text, songlen_text)
     lines[4] = ("%s listeners"):format(listeners)
+    lines[5] = ("%sNext: %s"):format(ass([[{\fs20}]]), next_song)
     return table.concat(lines, "\n")
 end
 
@@ -53,7 +56,7 @@ function update_osd_text()
     else
         osd_text = osd_title_highlight()
     end
-    mp.osd_message(ass([[{\\fs30}]])..osd_text)
+    mp.osd_message(osd_text)
 end
 
 function check_buffer(_, buffer_length)

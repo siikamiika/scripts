@@ -3,8 +3,7 @@ require "shared.helpers"
 local scrobbling = false
 local timer = nil
 local artist, title, album, length, timestamp = nil
-local scrobbler_path = script_path()
-scrobbler_path = utils.split_path(scrobbler_path)
+local scrobbler_path = script_dir()
 scrobbler_path = utils.join_path(scrobbler_path, "shared/last_fm_scrobbler.py")
 local fj = utils.format_json
 

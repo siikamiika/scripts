@@ -31,16 +31,21 @@ function string:trim()
     return self:match("^%s*(.*%S)") or ""
 end
 
-function script_path()
-   local str = debug.getinfo(2, "S").source:sub(2)
-   return str
+function script_dir()
+   local path = debug.getinfo(2, "S").source:sub(2)
+   path = utils.split_path(path)
+   return path
 end
 
-function extract_broken_json(str, keys)
-    local path = script_path()
-    path = utils.split_path(path)
+function extract_broken_json(str, keys, url)
+    local path = script_dir()
     path = utils.join_path(path, "get_json.py")
-    local args = {"python", path, str, keys}
+    local args = {"python", path}
+    if url then
+        args[#args + 1] = "url"
+    end
+    args[#args + 1] = str
+    args[#args + 1] = keys
     local ret = utils.subprocess({args = args})
     return utils.parse_json(ret.stdout)
 end

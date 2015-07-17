@@ -14,11 +14,14 @@ def parse_key(key):
 
 def main():
     args = sys.argv[1:]
-    if args[0] == 'url':
-        args = args[1:]
-        data = url2object(args[0])
-    else:
-        data = json.loads(args[0])
+    data = dict()
+    try:
+        if args[0] == 'url':
+            args = args[1:]
+            data = url2object(args[0])
+        else:
+            data = json.loads(args[0])
+    except: pass
     data_list = [[k for k in kl.split(',') if k] for kl in args[1].split(';') if kl]
     for i, kl in enumerate(data_list):
         data_list[i] = data

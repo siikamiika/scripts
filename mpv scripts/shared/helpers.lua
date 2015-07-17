@@ -96,3 +96,16 @@ function colored(text, bgr, default)
     end
     return ass([[{\c&H]]..bgr..[[&}]])..text..return_color
 end
+
+function map(func, tbl)
+    local newtbl = {}
+    for i,v in pairs(tbl) do
+        newtbl[i] = func(v)
+    end
+    return newtbl
+end
+
+function int(val, default)
+    if tonumber(val) == nil then return default or 0 end
+    return math.floor(val + 0.5)
+end

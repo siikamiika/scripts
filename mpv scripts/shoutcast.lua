@@ -7,17 +7,18 @@ local osd_title, dj, next_song, osd_text = ""
 local listeners, songlen, songpos, r_a_dio_info_fetch_time = 0
 
 function get_r_a_dio_info()
-    local starttime, endtime, curtime = 0
+    local starttime, endtime, curtime
     local info = extract_broken_json("https://r-a-d.io/api",
         "'main','start_time';"..
         "'main','end_time';"..
         "'main','current';"..
         "'main','np';"..
-        "'main','djname';"..
+        "'main','dj','djname';"..
         "'main','listeners';"..
         "'main','queue',0,'meta';"
     , true)
     starttime, endtime, curtime, osd_title, dj, listeners, next_song = unpack(info)
+    starttime, endtime, curtime = unpack(map(int, {starttime, endtime, curtime}))
     songlen = endtime-starttime
     songpos = curtime-starttime
     r_a_dio_info_fetch_time = mp.get_time()

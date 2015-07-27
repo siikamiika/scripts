@@ -50,6 +50,8 @@ Plugin 'haya14busa/incsearch.vim'
 Plugin 'easymotion/vim-easymotion'
 Plugin 'jiangmiao/auto-pairs'
 Plugin 'nathanaelkane/vim-indent-guides'
+Plugin 'jelera/vim-javascript-syntax'
+Plugin 'hdima/python-syntax'
 " plugins end
 
 call vundle#end()
@@ -72,11 +74,16 @@ set softtabstop=4
 set shiftwidth=4
 set expandtab
 
-" keymaps
+" tabs
 map <F7> :tabprevious<CR>
 map <F8> :tabnext<CR>
 map <C-T> :tabnew<CR>
+
 nnoremap <silent> <C-l> :nohl<CR><C-l>
+
+" splits
+set splitbelow
+set splitright
 
 " useful stuff from mswin.vim
 if 1
@@ -141,3 +148,8 @@ map *  <Plug>(incsearch-nohl-*)
 map #  <Plug>(incsearch-nohl-#)
 map g* <Plug>(incsearch-nohl-g*)
 map g# <Plug>(incsearch-nohl-g#)
+
+" indent guides
+let g:indent_guides_enable_on_vim_startup = 1
+let g:indent_guides_start_level = 2
+let g:indent_guides_guide_size = 1

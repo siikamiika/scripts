@@ -1,7 +1,7 @@
 from i3pystatus.load import *
 
 class Load(Load):
-    settings = Load.settings + ("color",)
+    settings = Load.settings + ["color"]
 
     color = "#FFFFFF"
 

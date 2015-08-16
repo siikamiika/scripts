@@ -1,7 +1,7 @@
 from i3pystatus.cpu_usage import *
 
 class CpuUsage(CpuUsage):
-    settings = CpuUsage.settings + ("color",)
+    settings = CpuUsage.settings + ["color"]
     color = "#FFFFFF"
 
     def run(self):

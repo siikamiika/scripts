@@ -1,5 +1,5 @@
 from i3pystatus import IntervalModule
-from subprocess import getoutput
+from subprocess import check_output
 
 class GpuInfo(IntervalModule):
 
@@ -11,11 +11,11 @@ class GpuInfo(IntervalModule):
     )
 
     format_options = (
-        "gpucoretemp",
-        "gpucurrentfanspeed",
-        "gpucurrentfanspeedrpm",
-        "useddedicatedgpumemory",
-        "totaldedicatedgpumemory",
+        "temperature.gpu",
+        "memory.used",
+        "memory.total",
+        "utilization.gpu",
+        "utilization.memory",
     )
 
     format = ""
@@ -26,18 +26,16 @@ class GpuInfo(IntervalModule):
             info = dict(
                 (
                     f,
-                    int(
-                        getoutput("nvidia-settings -t -q {}".format(f))
-                        .splitlines()[0]
-                    )
+                    check_output(
+                        "nvidia-smi --query-gpu="+f+
+                        " --format=csv,noheader", shell=True).decode().splitlines()[0],
                 )
                 for f in self.format_options if f in self.format
             )
         except Exception as e:
-            self.output = {"full_text": e}
+            self.output = {"full_text": ""}
             return
-
         self.output = {
-            "full_text": self.format.format(**info),
+            "full_text": self.format.format(info),
             "color": self.color,
         }

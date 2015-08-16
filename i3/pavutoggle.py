@@ -4,7 +4,7 @@ from os import kill
 from signal import SIGTERM
 
 class PulseAudio(PulseAudio):
-    settings = PulseAudio.settings + ("color",)
+    settings = PulseAudio.settings + ["color"]
     color = "#FFFFFF"
 
     def sink_info_cb(self, context, sink_info_p, _, __):

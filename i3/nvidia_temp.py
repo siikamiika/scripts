@@ -18,16 +18,15 @@ class NvGpuTemp(IntervalModule):
     color = "#FFFFFF"
     color_high = "#FFFF00"
     color_crit = "#FF0000"
-    limit_high = 50
-    limit_crit = 75
+    limit_high = 55
+    limit_crit = 80
 
     def run(self):
-        raw = getoutput("nvidia-settings -q gpucoretemp -t")
+        raw = getoutput("nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader")
         try:
             tmp = int(raw.splitlines()[0])
         except Exception as e:
-            print(e)
-            self.output = {"full_text": "error"}
+            self.output = {"full_text": ""}
             return
         color = self.color
         if tmp >= self.limit_crit:

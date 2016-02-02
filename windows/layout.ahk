@@ -17,10 +17,14 @@ Key(upper, lower) {
     Return
 }
 
+
 ; ÅåÄäÖö
 SC07B & '::Key("Ä", "ä")
+SC079 & a::Key("Ä", "ä")
 SC07B & `;::Key("Ö", "ö")
+SC079 & o::Key("Ö", "ö")
 SC07B & [::Key("Å", "å")
+SC079 & q::Key("Å", "å")
 
 
 ; navigation keys
@@ -44,3 +48,7 @@ Capslock::Esc
 ; backspace
 SC070:: Send, {BS}
 ^SC070::Send, ^{BS}
+
+; change layout
+~!+2::Run, thumbshift.ahk
+~!+3::Run, rusphonetic.ahk

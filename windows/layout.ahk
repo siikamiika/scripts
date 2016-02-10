@@ -19,26 +19,38 @@ Key(upper, lower) {
 
 
 ; ÅåÄäÖö
-SC07B & '::Key("Ä", "ä")
-SC079 & a::Key("Ä", "ä")
-SC07B & `;::Key("Ö", "ö")
-SC079 & o::Key("Ö", "ö")
-SC07B & [::Key("Å", "å")
-SC079 & q::Key("Å", "å")
+SC07B & SC028::Key("Ä", "ä")
+SC079 & SC01E::Key("Ä", "ä")
+SC07B & SC027::Key("Ö", "ö")
+SC079 & SC018::Key("Ö", "ö")
+SC07B & SC01A::Key("Å", "å")
+SC079 & SC010::Key("Å", "å")
 
+
+; special characters
+SC079 & -::
+if GetKeyState("Shift")
+    Send, —
+else
+    Send, –
+Return
+SC073::Send, <
+Shift & SC073::Send, >
+SC07B & SC073::Send, |
+SC079 & SC073::Send, |
 
 ; navigation keys
-SC079 & h:: Send, {Blind}{Left}
-SC079 & j:: Send, {Blind}{Down}
-SC079 & k:: Send, {Blind}{Up}
-SC079 & l:: Send, {Blind}{Right}
+SC079 & SC023:: Send, {Blind}{Left}
+SC079 & SC024:: Send, {Blind}{Down}
+SC079 & SC025:: Send, {Blind}{Up}
+SC079 & SC026:: Send, {Blind}{Right}
 
-SC079 & i:: Send, {Blind}{Insert}
-SC079 & u:: Send, {Blind}{Delete}
-SC079 & p:: Send, {Blind}{Home}
-SC079 & `;:: Send, {Blind}{End}
-SC079 & [:: Send, {Blind}{PgUp}
-SC079 & ':: Send, {Blind}{PgDn}
+SC079 & SC017:: Send, {Blind}{Insert}
+SC079 & SC016:: Send, {Blind}{Delete}
+SC079 & SC019:: Send, {Blind}{Home}
+SC079 & SC027:: Send, {Blind}{End}
+SC079 & SC01A:: Send, {Blind}{PgUp}
+SC079 & SC028:: Send, {Blind}{PgDn}
 
 
 ; caps
@@ -50,5 +62,5 @@ SC070:: Send, {BS}
 ^SC070::Send, ^{BS}
 
 ; change layout
-~!+2::Run, thumbshift.ahk
+;~!+2::Run, thumbshift.ahk
 ~!+3::Run, rusphonetic.ahk

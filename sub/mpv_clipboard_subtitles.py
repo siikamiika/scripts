@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import pyperclip
+from tornado import websocket, web, ioloop
 from pathlib import Path
 import re
 from mpv_python_ipc import MpvProcess
@@ -85,6 +86,30 @@ class Srt(object):
 
 
 
+clients = []
+
+
+class WsHandler(websocket.WebSocketHandler):
+
+    def check_origin(self, origin):
+        return True
+
+    def open(self):
+        if self not in clients:
+            clients.append(self)
+
+    def on_close(self):
+        if self in clients:
+            clients.remove(self)
+
+
+def get_app():
+    return web.Application([
+        (r'/', WsHandler),
+    ])
+
+
+
 def main():
 
     video = sys.argv[1]
@@ -100,16 +125,22 @@ def main():
         text = srt.get_caption(t - d)
         if text:
             pyperclip.copy(text)
+            for c in clients:
+                c.write_message(text)
 
     mp.observe_property('time-pos', copysub)
 
-    # prevent closing the script before playback ends, but close everything at eof
-    end = Queue()
-    def quit():
-        end.put(None)
-    mp.register_event('end-file', quit)
-    end.get(True)
-    mp.commandv('quit')
+    app = get_app()
+    app.listen(9873)
+    main_loop = ioloop.IOLoop.instance()
+    main_loop.start()
+    # # prevent closing the script before playback ends, but close everything at eof
+    # end = Queue()
+    # def quit():
+    #     end.put(None)
+    # mp.register_event('end-file', quit)
+    # end.get(True)
+    # mp.commandv('quit')
     
 
 if __name__ == '__main__':

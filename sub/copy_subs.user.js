@@ -12,5 +12,6 @@ var address = 'ws://localhost:9873/'
 var ws = new WebSocket(address);
 ws.onmessage = function (text) {
     text_input.value = text.data;
-    text_input.oninput();
+    //text_input.oninput();
+    angular.element(text_input).triggerHandler('change');
 }

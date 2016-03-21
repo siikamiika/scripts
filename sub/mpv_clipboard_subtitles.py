@@ -7,11 +7,11 @@ import re
 from mpv_python_ipc import MpvProcess
 import sys
 import time
-from os.path import splitext
+from os.path import splitext, isfile
 from queue import Queue
 
 
-class Srt(object):
+class Subtitles(object):
 
     def __init__(self, path):
 
@@ -53,7 +53,14 @@ class Srt(object):
             c = self.captions[i]
 
 
+
+class Srt(Subtitles):
+
     def _parse(self):
+
+        def parse_time(t):
+            h, m, s = t.strip().split(':')
+            return int(h) * 60*60 + int(m) * 60 + float(s.replace(',', '.'))
 
         status = None
         caption = None
@@ -67,7 +74,7 @@ class Srt(object):
                 if caption:
                     caption['text'] = '\n'.join(caption['text'])
                     self.captions.append(caption)
-                caption = dict(start=self._parse_time(start), end=self._parse_time(end), text=[])
+                caption = dict(start=parse_time(start), end=parse_time(end), text=[])
                 status = 'text'
             elif status == 'text':
                 if re.match('^\d+$', l):
@@ -80,9 +87,39 @@ class Srt(object):
         self.captions.sort(key=lambda c: c['start'])
 
 
-    def _parse_time(self, t):
-        h, m, s = t.strip().split(':')
-        return int(h) * 60*60 + int(m) * 60 + float(s.replace(',', '.'))
+
+class Ass(Subtitles):
+
+    def _parse(self):
+
+        def parse_time(t):
+            h, m, s = t.split(':')
+            return int(h) * 60*60 + int(m) * 60 + float(s)
+
+        section = None
+        fmt = None
+
+        for l in self.raw.splitlines():
+
+            if l and l[0] == '[' and l[-1] == ']':
+                section = l[1:-1]
+                continue
+
+            if section == 'Events':
+                if l.startswith('Format:'):
+                    fmt = list(map(lambda l: l.strip(), l[len('Format:'):].split(',')))
+                    continue
+                if l.startswith('Dialogue:'):
+                    dialogue = dict(zip(fmt,
+                        map(lambda l: l.strip(), l[len('Dialogue:'):].split(',', len(fmt) - 1))))
+                    self.captions.append(dict(
+                        start=parse_time(dialogue['Start']),
+                        end=parse_time(dialogue['End']),
+                        text=dialogue['Text']
+                        ))
+                    continue
+
+            self.captions.sort(key=lambda c: c['start'])
 
 
 
@@ -113,7 +150,16 @@ def get_app():
 def main():
 
     video = sys.argv[1]
-    srt = Srt(splitext(video)[0] + '.srt')
+    video_base = splitext(video)[0]
+
+    if isfile(video_base + '.srt'):
+        sub = Srt(video_base + '.srt')
+    elif isfile(video_base + '.ass'):
+        sub = Ass(video_base + '.ass')
+    else:
+        print('no subtitles found')
+        return
+
     mp = MpvProcess()
 
     mp.commandv('loadfile', video)
@@ -122,9 +168,9 @@ def main():
         if not t:
             return
         d = mp.get_property_native('sub-delay') or 0
-        text = srt.get_caption(t - d)
+        text = sub.get_caption(t - d)
         if text:
-            pyperclip.copy(text)
+            #pyperclip.copy(text)
             for c in clients:
                 c.write_message(text)
 

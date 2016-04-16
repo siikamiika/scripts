@@ -39,6 +39,7 @@ Shift & SC073::Send, >
 SC07B & SC073::Send, |
 SC079 & SC073::Send, |
 
+
 ; navigation keys
 SC079 & SC023:: Send, {Blind}{Left}
 SC079 & SC024:: Send, {Blind}{Down}
@@ -51,6 +52,15 @@ SC079 & SC019:: Send, {Blind}{Home}
 SC079 & SC027:: Send, {Blind}{End}
 SC079 & SC01A:: Send, {Blind}{PgUp}
 SC079 & SC028:: Send, {Blind}{PgDn}
+
+
+; "numpad"
+SC07B & SC024:: Send, 1
+SC07B & SC025:: Send, 2
+SC07B & SC026:: Send, 3
+SC07B & SC016:: Send, 4
+SC07B & SC017:: Send, 5
+SC07B & SC018:: Send, 6
 
 
 ; caps

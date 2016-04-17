@@ -3,6 +3,7 @@
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #SingleInstance force
+#NoTrayIcon
 
 Key(upper, lower, original) {
     if GetKeyState("Ctrl") or GetKeyState("Alt") or GetKeyState("LWin") or GetKeyState("RWin")
@@ -56,3 +57,4 @@ Key(upper, lower, original) {
 ; close when other layouts are activated
 ~!+1::ExitApp
 ~!+2::ExitApp
+~!+4::ExitApp

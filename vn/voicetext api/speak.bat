@@ -1,0 +1,1 @@
+"C:\Program Files\AutoHotkey\AutoHotkey.exe" speak.ahk %1%

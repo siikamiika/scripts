@@ -1,0 +1,1 @@
+"C:\Program Files\AutoHotkey\AutoHotkey.exe" coed.ahk %1%

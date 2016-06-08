@@ -36,10 +36,10 @@ def main():
     def check():
         global old
         text = pyperclip.paste()
-        text = text.replace(u"…", "")
-        text = re.sub(ur"([。！？】」.!?]+)", r"\1\n", text)
+        text = re.sub(ur"([。！？】」.!?…]+)", r"\1\n", text)
         text = re.sub(ur"(.{15,}、)", r"\1\n", text)
         text = re.sub(ur"、([^、]{15,})", ur"、\n\1", text)
+        text = re.sub(r"(\r?\n)+", r"\n", text)
         if not text or text == old:
             return
         for c in clients:

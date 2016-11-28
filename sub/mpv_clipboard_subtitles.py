@@ -87,6 +87,35 @@ class Srt(Subtitles):
         self.captions.sort(key=lambda c: c['start'])
 
 
+class Vtt(Subtitles):
+
+    def _parse(self):
+
+        def parse_time(t):
+            h, m, s = t.strip().split(':')
+            return int(h) * 60*60 + int(m) * 60 + float(s.replace(',', '.'))
+
+        status = None
+        caption = None
+
+        for l in self.raw.splitlines():
+            if re.match(r'^[\d:\.]+ --> [\d:\.]+$', l):
+                start, end = l.split('-->')
+                if caption:
+                    caption['text'] = '\n'.join(caption['text'])
+                    self.captions.append(caption)
+                caption = dict(start=parse_time(start), end=parse_time(end), text=[])
+                status = 'text'
+            elif status == 'text':
+                if not l:
+                    status = 'time'
+                else:
+                    caption['text'].append(l)
+
+        caption['text'] = '\n'.join(caption['text'])
+        self.captions.append(caption)
+        self.captions.sort(key=lambda c: c['start'])
+
 
 class Ass(Subtitles):
 
@@ -156,6 +185,8 @@ def main():
         sub = Srt(video_base + '.srt')
     elif isfile(video_base + '.ass'):
         sub = Ass(video_base + '.ass')
+    elif isfile(video_base + '.vtt'):
+        sub = Vtt(video_base + '.vtt')
     else:
         print('no subtitles found')
         return

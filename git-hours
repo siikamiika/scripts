@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+from subprocess import check_output
+import time
+
+FIRST_COMMIT_ADDITION = 120
+MAX_COMMIT_DIFF_MINUTES = 120
+
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+def estimate_hours(dates):
+    if len(dates) < 2:
+        return 0
+    dates = sorted(dates)
+
+    hours = 0
+    for i, date in enumerate(dates[:-1]):
+        next_date = dates[i + 1]
+        diff_minutes = (next_date - date) / 60
+
+        if diff_minutes < MAX_COMMIT_DIFF_MINUTES:
+            hours += diff_minutes / 60
+        else:
+            hours += FIRST_COMMIT_ADDITION / 60
+    return hours
+
+def main():
+    dates = check_output(['git', '--no-pager', 'log', '--format=%ci']).decode().splitlines()
+    dates = [time.mktime(time.strptime(' '.join(d.split()[:2]), DATE_FORMAT)) for d in dates]
+    print('Estimated hours spent on this project: {}'.format(estimate_hours(dates)))
+
+if __name__ == '__main__':
+    main()

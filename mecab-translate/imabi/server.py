@@ -88,15 +88,20 @@ class Search(object):
                 continue
 
             with open(PROCESSED + filename) as f:
-                raw = BS(f.read(), 'html5lib').get_text()
-            words = raw.split()
+                soup = BS(f.read(), 'html5lib')
+            title = soup.find('h3', {'class': 'fw-title'})
+            if not title:
+                title = filename
+            else:
+                title = title.get_text().strip().replace('\n', ' ')
+            words = soup.get_text().split()
 
             for w in words:
                 parts = self._split_text(w)
                 for p in parts:
                     if p not in self.words:
                         self.words[p] = set()
-                    self.words[p].add(filename)
+                    self.words[p].add((filename, title))
 
         print('    parsed in {:.2f} s'.format(time.time() - start))
 

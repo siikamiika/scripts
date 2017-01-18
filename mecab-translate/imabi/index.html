@@ -16,8 +16,8 @@ function search() {
     });
 }
 
-function create_link(filename) {
-    return '<div><a target="_blank" href="'+filename+'">'+filename+'</a></div>';
+function create_link(page) {
+    return '<div><a target="_blank" href="'+page[0]+'">'+page[1]+'</a></div>';
 }
 
 var XHR = function(type, path, data, onready, async) {

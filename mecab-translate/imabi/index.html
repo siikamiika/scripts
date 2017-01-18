@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<input id="input" oninput="search()">
+<div id="output"></div>
+<script type="text/javascript">
+var output = document.getElementById('output');
+var input = document.getElementById('input');
+
+function search() {
+    var query = encodeURIComponent(input.value);
+    XHR('GET', '/search?query='+query, null, function(results) {
+        results = JSON.parse(results);
+        output.innerHTML = '';
+        output.innerHTML = results.map(function(result) {
+            return create_link(result)
+        }).join('');
+    });
+}
+
+function create_link(filename) {
+    return '<div><a target="_blank" href="'+filename+'">'+filename+'</a></div>';
+}
+
+var XHR = function(type, path, data, onready, async) {
+    if (!onready) {onready = function(){}}
+    if (!(async === false)) {async = true};
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            onready(xhr.responseText);
+        }
+    }
+
+    xhr.open(type, path, async);
+    xhr.send(data);
+}
+</script>

@@ -108,7 +108,7 @@ def process():
         page.body['style'] = 'margin: 20px;'
 
         with open(OUTPUT_DIR + filename, 'w') as f:
-            f.write(page.prettify())
+            f.write(str(page))
 
 def main():
     """Create output directory and process downloaded pages"""

@@ -44,13 +44,13 @@ class EntryIndexes(object):
         self.original_spelling_explanation = original_spelling_explanation
         # あい‐きょう,哀叫,哀叫,,,‐ケウ <-- this
         self.historical = historical
-        self.indexes = []
+        self.indexes = set()
         self._parse_indexes()
 
     def _parse_indexes(self):
-        self.indexes += self._parse_headwords()
-        self.indexes += self._parse_describe2()
-        self.indexes += self._parse_original_spelling()
+        self.indexes |= self._parse_headwords()
+        self.indexes |= self._parse_describe2()
+        self.indexes |= self._parse_original_spelling()
 
     def _parse_headwords(self):
         readings = []
@@ -81,9 +81,9 @@ class EntryIndexes(object):
                 continue
         
         if not readings:
-            return [self.headword]
+            return {self.headword}
 
-        headwords = []
+        headwords = set()
         for i in range(len(readings) + 1):
             for c in itertools.combinations(range(len(readings)), i) if i > 0 else [()]:
                 end = -1
@@ -98,7 +98,7 @@ class EntryIndexes(object):
                     end = readings[j][1]
                 # tail
                 output.append(self.headword[readings[-1][1] + 1:])
-                headwords.append(''.join(output))
+                headwords.add(''.join(output))
 
         return headwords
 
@@ -114,58 +114,62 @@ class EntryIndexes(object):
                     optionals.append((optional_start, i))
 
             if not optionals:
-                return [text]
+                return {text}
 
-            combinations = []
-            for i in range(-1, len(optionals)):
-                end = -1
-                output = []
-                for j in range(len(optionals)):
-                    # add what's between previous optional and this optional
-                    output.append(text[end + 1:max(optionals[j][0], 0)])
-                    if j <= i: # then add optional
-                        output.append(text[optionals[j][0] + 1:optionals[j][1]])
-                    end = optionals[j][1]
-                # tail
-                output.append(text[optionals[-1][1] + 1:])
-                combinations.append(''.join(output))
+            combinations = set()
+            for i in range(len(optionals) + 1):
+                for c in itertools.combinations(range(len(optionals)), i) if i > 0 else [()]:
+                    end = -1
+                    output = []
+                    for j in range(len(optionals)):
+                        # add what's between previous optional and this optional
+                        output.append(text[end + 1:max(optionals[j][0], 0)])
+                        if j in c: # then add optional
+                            output.append(text[optionals[j][0] + 1:optionals[j][1]])
+                        end = optionals[j][1]
+                    # tail
+                    output.append(text[optionals[-1][1] + 1:])
+                    combinations.add(''.join(output))
 
             return combinations
 
 
-        describe2 = []
+        describe2 = set()
         for describe in self.describe2.split('／'):                
             if describe:
                 if '〔' in describe:
                     for d in describe.split('〔'):
-                        describe2 += parse_optional(d.strip('〕'))
+                        describe2 |= parse_optional(d.strip('〕'))
                 else:
-                    describe2 += parse_optional(describe)
+                    describe2 |= parse_optional(describe)
 
         return describe2
 
     def _parse_original_spelling(self):
-        original_spellings = []
+        original_spellings = set()
         for original_spelling in self.original_spelling.split('／'):
             if original_spelling:
-                original_spellings.append(original_spelling.split(')')[-1])
+                original_spellings.add(original_spelling.split(')')[-1])
 
         return original_spellings
 
 
 def test():
-    test = EntryIndexes('口(くち)が干上(ひあ)が・る', '', '', '', '', '')
-    assert(set(test.indexes) == {'くちがひあがる', '口がひあがる', 'くちが干上がる', '口が干上がる'})
-    test2 = EntryIndexes('あ', '', '', '', '', '')
-    assert(set(test2.indexes) == {'あ'})
-    test3 = EntryIndexes('口(くち)が減らない', '', '', '', '', '')
-    assert(set(test3.indexes) == {'くちが減らない', '口が減らない'})
-    test4 = EntryIndexes('', '', '言（い）出し', '', '', '')
-    assert(set(test4.indexes) == {'', '言出し', '言い出し'})
-    test5 = EntryIndexes('', '', '現す〔糞（わ）す〕／表す〔表わす〕／顕す', '', '', '')
-    assert(set(test5.indexes) == {'', '現す', '糞す', '糞わす', '表す', '表わす', '顕す'})
-    test6 = EntryIndexes('', '', '', '(ドイツ)Chrom／(フランス)chrome', '', '')
-    assert(set(test6.indexes) == {'', 'Chrom', 'chrome'})
+    assert(EntryIndexes('口(くち)が干上(ひあ)が・る', '', '', '', '', '').indexes
+        == {'くちがひあがる', '口がひあがる', 'くちが干上がる', '口が干上がる'})
+    assert(EntryIndexes('あ', '', '', '', '', '').indexes) == {'あ'}
+    assert(EntryIndexes('口(くち)が減らない', '', '', '', '', '').indexes
+        == {'くちが減らない', '口が減らない'})
+    assert(EntryIndexes('', '', '言（い）出し', '', '', '').indexes
+        == {'', '言出し', '言い出し'})
+    assert(EntryIndexes('', '', '現す〔糞（わ）す〕／表す〔表わす〕／顕す', '', '', '').indexes
+        == {'', '現す', '糞す', '糞わす', '表す', '表わす', '顕す'})
+    assert(EntryIndexes('', '', '', '(ドイツ)Chrom／(フランス)chrome', '', '').indexes
+        == {'', 'Chrom', 'chrome'})
+    assert(EntryIndexes('', '', '糞（わ）倒（す）す', '', '', '').indexes
+        == {'', '糞倒す', '糞わ倒す', '糞倒すす', '糞わ倒すす'})
+    assert(EntryIndexes('糞倒す', '', '糞（わ）倒（す）す', '', '', '').indexes
+        == {'糞倒す', '糞わ倒す', '糞倒すす', '糞わ倒すす'})
 
 def get_indexes(row):
     return EntryIndexes(row[2], row[3], row[4], row[5], row[6], row[7]).indexes
@@ -182,10 +186,10 @@ def main():
         indexes = get_indexes(row)
         for index in indexes:
             if not output.get(index):
-                output[index] = []
-            output[index].append(item_id)
+                output[index] = set()
+            output[index].add(item_id)
     for index in sorted(output):
-        output_writer.writerow([index, '|'.join(list(set(output[index])))])
+        output_writer.writerow([index, '|'.join(output[index])])
     input_file.close()
     output_file.close()
 

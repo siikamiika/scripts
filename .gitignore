@@ -5,3 +5,4 @@ __pycache__/
 *.py[cod]
 mecab-translate/imabi/imabi/
 mecab-translate/imabi/imabi_processed/
+windows/conf.ini

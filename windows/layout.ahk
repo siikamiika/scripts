@@ -62,6 +62,12 @@ SC07B & SC027::Key(key_027_mhk[1], key_027_mhk[2])
 SC079 & SC018::Key(key_027_mhk[1], key_027_mhk[2])
 SC07B & SC01A::Key("Å", "å")
 SC079 & SC010::Key("Å", "å")
+; ...for Finnish keyboards
+*SC056::Key("Ä", "ä")
+*>!SC056::Key("Ö", "ö")
+*>!SC01E::Key("Ä", "ä")
+*>!SC018::Key("Ö", "ö")
+*>!SC010::Key("Å", "å")
 
 
 ; special characters
@@ -89,6 +95,35 @@ SC079 & SC019:: Send, {Blind}{Home}
 SC079 & SC027:: Send, {Blind}{End}
 SC079 & SC01A:: Send, {Blind}{PgUp}
 SC079 & SC028:: Send, {Blind}{PgDn}
+; ...for Finnish keyboards
+FinnishNav(NavKey) {
+    Modifiers := ""
+    if (GetKeyState("LCtrl", "P")) {
+        Modifiers = %Modifiers%^
+    }
+    if (GetKeyState("LAlt", "P")) {
+        Modifiers = %Modifiers%!
+    }
+    if (GetKeyState("Shift", "P")) {
+        Modifiers = %Modifiers%+
+    }
+    if (GetKeyState("LWin", "P")) {
+        Modifiers = %Modifiers%#
+    }
+    Send, %Modifiers%{%NavKey%}
+    Return
+}
+*>!SC023::FinnishNav("Left")
+*>!SC024::FinnishNav("Down")
+*>!SC025::FinnishNav("Up")
+*>!SC026::FinnishNav("Right")
+
+*>!SC017::FinnishNav("Insert")
+*>!SC016::FinnishNav("Delete")
+*>!SC019::FinnishNav("Home")
+*>!SC027::FinnishNav("End")
+*>!SC01A::FinnishNav("PgUp")
+*>!SC028::FinnishNav("PgDn")
 
 
 ; "numpad"

@@ -144,23 +144,23 @@ SC070:: Send, {BS}
 ^SC070::Send, ^{BS}
 
 ; change layout
-~!+1::
+!+1::
     Send, ^{F1} ; Precomposition | Ctrl F1 | Deactivate IME
     Menu, Tray, Icon, en.ico
     Finnish(false)
     Return
-~!+2::
+!+2::
     ;Run, thumbshift.ahk
     Send, ^{F2} ; DirectInput | Ctrl F2 | Activate IME
     Menu, Tray, Icon, en.ico
     Finnish(false)
     Return
-~!+3::
+!+3::
     Send, ^{F1}
     Menu, Tray, Icon, ru.ico
     Run, rusphonetic.ahk
     Return
-~!+4::
+!+4::
     Send, ^{F1}
     Menu, Tray, Icon, fi.ico
     Finnish(true)

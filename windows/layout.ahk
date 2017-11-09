@@ -124,6 +124,13 @@ FinnishNav(NavKey) {
 *>!SC027::FinnishNav("End")
 *>!SC01A::FinnishNav("PgUp")
 *>!SC028::FinnishNav("PgDn")
+; workaround for lockscreen (conflicts with mhk+Win+L)
+#SC027::
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 0
+    DllCall("LockWorkStation")
+    Sleep, 1000
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER, Software\Microsoft\Windows\CurrentVersion\Policies\System, DisableLockWorkstation, 1
+    Return
 
 
 ; "numpad"

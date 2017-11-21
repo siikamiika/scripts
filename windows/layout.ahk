@@ -172,3 +172,7 @@ SC070:: Send, {BS}
     Menu, Tray, Icon, fi.ico
     Finnish(true)
     Return
+F2::
+    Run, remotekeyboard.ahk
+    Return
+F1::Return

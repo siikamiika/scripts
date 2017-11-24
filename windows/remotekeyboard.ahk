@@ -15,12 +15,7 @@ MouseQueue := []
 ; disable mouse
 BlockInput, MouseMove
 
-; SetTimer, CheckMouse, 1000
-; Return
-
-; CheckMouse:
-;     ControlMouse()
-; Return
+SetTimer, ControlMouse, 30
 
 ; create dummy gui for AHKHID
 Gui, +LastFound
@@ -90,8 +85,6 @@ InputMsg(wParam, lParam) {
 
     MouseQueuePush(MouseEvent)
     if (MouseEvent["mouse_buttons"].Length() > 0) {
-        ControlMouse()
-    } else {
         ControlMouse()
     }
 }

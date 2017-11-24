@@ -2,10 +2,99 @@
 ; #Warn  ; Enable warnings to assist with detecting common errors.
 SendMode Input  ; Recommended for new scripts due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
+#Persistent
 #MaxHotkeysPerInterval 999
+#Include, AHKHID.ahk
+
+WM_INPUT := 0x00FF
 
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
 KeysDown := {}
+MouseQueue := []
+
+; disable mouse
+BlockInput, MouseMove
+
+; SetTimer, CheckMouse, 1000
+; Return
+
+; CheckMouse:
+;     ControlMouse()
+; Return
+
+; create dummy gui for AHKHID
+Gui, +LastFound
+GuiHandle := WinExist()
+
+OnMessage(WM_INPUT, "InputMsg")
+
+; show gui (hidden) and register ahkhid to it
+Gui, Show, Hide
+AHKHID_Register(1,2,GuiHandle,RIDEV_INPUTSINK)
+Return
+
+MouseQueuePush(Event) {
+    global MouseQueue
+    MouseQueue.Push(Event)
+}
+
+MouseQueueGet() {
+    global MouseQueue
+    return MouseQueue
+}
+
+MouseQueueClear() {
+    global MouseQueue
+    MouseQueue := []
+}
+
+InputMsg(wParam, lParam) {
+    Local flags, MouseEvent
+    Critical
+
+    MouseEvent := {mouse_buttons: []}
+
+    MouseEvent["x"] := AHKHID_GetInputInfo(lParam, II_MSE_LASTX)
+    MouseEvent["y"] := AHKHID_GetInputInfo(lParam, II_MSE_LASTY)
+
+    ;Get flags and add to listbox
+    flags := AHKHID_GetInputInfo(lParam, II_MSE_BUTTONFLAGS)
+    If (flags & RI_MOUSE_LEFT_BUTTON_DOWN)
+        MouseEvent["mouse_buttons"].Push("left_down")
+    If (flags & RI_MOUSE_LEFT_BUTTON_UP)
+        MouseEvent["mouse_buttons"].Push("left_up")
+    If (flags & RI_MOUSE_RIGHT_BUTTON_DOWN)
+        MouseEvent["mouse_buttons"].Push("right_down")
+    If (flags & RI_MOUSE_RIGHT_BUTTON_UP)
+        MouseEvent["mouse_buttons"].Push("right_up")
+    If (flags & RI_MOUSE_MIDDLE_BUTTON_DOWN)
+        MouseEvent["mouse_buttons"].Push("middle_down")
+    If (flags & RI_MOUSE_MIDDLE_BUTTON_UP)
+        MouseEvent["mouse_buttons"].Push("middle_up")
+    If (flags & RI_MOUSE_BUTTON_4_DOWN)
+        MouseEvent["mouse_buttons"].Push("xbutton1_down")
+    If (flags & RI_MOUSE_BUTTON_4_UP)
+        MouseEvent["mouse_buttons"].Push("xbutton1_up")
+    If (flags & RI_MOUSE_BUTTON_5_DOWN)
+        MouseEvent["mouse_buttons"].Push("xbutton2_down")
+    If (flags & RI_MOUSE_BUTTON_5_UP)
+        MouseEvent["mouse_buttons"].Push("xbutton2_up")
+    If (flags & RI_MOUSE_WHEEL) {
+        WheelDelta := AHKHID_GetInputInfo(lParam, II_MSE_BUTTONDATA)
+        if (WheelDelta > 0) {
+            MouseEvent["mouse_buttons"].Push("wheel_up")
+        } else if (WheelDelta < 0) {
+            MouseEvent["mouse_buttons"].Push("wheel_down")
+        }
+    }
+
+    MouseQueuePush(MouseEvent)
+    if (MouseEvent["mouse_buttons"].Length() > 0) {
+        ControlMouse()
+    } else {
+        ControlMouse()
+    }
+}
 
 HTTPGet(URL, Auth) {
     oHTTP := ComObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -30,6 +119,29 @@ KeyUp(AHKCode, Code) {
     KeysDown.Delete(AHKCode)
     global VfioCredentials
     HTTPGet("http://es.lan:9888/key?code=" Code "&state=1", VfioCredentials)
+}
+
+ControlMouse() {
+    x := 0
+    y := 0
+    MouseButtonsArray := []
+    MouseQueue := MouseQueueGet()
+    For _, Event in MouseQueue {
+        x += Event["x"]
+        y += Event["y"]
+        For _, MouseButton in Event["mouse_buttons"] {
+            MouseButtonsArray.Push(MouseButton)
+        }
+    }
+    MouseQueueClear()
+    if (x != 0 or y != 0 or MouseButtonsArray.Length() != 0) {
+        MouseButtons := ""
+        For _, MouseButton in MouseButtonsArray {
+            MouseButtons .= "," . MouseButton
+        }
+        global VfioCredentials
+        HTTPGet("http://es.lan:9888/mouse?x=" x "&y=" y "&mouse_buttons=" MouseButton, VfioCredentials)
+    }
 }
 
 ; exit
@@ -224,3 +336,14 @@ Left::Key(A_ThisHotkey, 113)
 Left Up::KeyUp(A_ThisHotkey, 113)
 Right::Key(A_ThisHotkey, 114)
 Right Up::KeyUp(A_ThisHotkey, 114)
+; mouse
+LButton::
+MButton::
+RButton::
+WheelDown::
+WheelUp::
+WheelLeft::
+WheelRight::
+XButton1::
+XButton2::
+Return

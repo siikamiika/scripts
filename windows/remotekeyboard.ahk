@@ -6,28 +6,44 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #MaxHotkeysPerInterval 999
 #Include, AHKHID.ahk
 
+; constants
+;__________
 WM_INPUT := 0x00FF
 
+; globals
+;________
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
 KeysDown := {}
 MouseQueue := []
 
-; disable mouse
-BlockInput, MouseMove
-
-SetTimer, ControlMouse, 30
-
+; init
+;_____
 ; create dummy gui for AHKHID
 Gui, +LastFound
 GuiHandle := WinExist()
+Gui, Show, Hide
+AHKHID_Register(1, 2, GuiHandle, RIDEV_INPUTSINK)
 
+; the events are stored to MouseQueue first
 OnMessage(WM_INPUT, "InputMsg")
 
-; show gui (hidden) and register ahkhid to it
-Gui, Show, Hide
-AHKHID_Register(1,2,GuiHandle,RIDEV_INPUTSINK)
-Return
+; every 30 ms, check for new mouse events, send them, and clear the queue
+SetTimer, ControlMouse, 30
 
+; disable mouse movement in this OS
+BlockInput, MouseMove
+
+; common functions
+;_________________
+HTTPGet(URL, Auth) {
+    oHTTP := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+    oHTTP.Open("GET", URL , False)
+    oHTTP.SetRequestHeader("Authorization", Auth)
+    oHTTP.Send()
+}
+
+; mouse functions
+;________________
 MouseQueuePush(Event) {
     global MouseQueue
     MouseQueue.Push(Event)
@@ -52,7 +68,6 @@ InputMsg(wParam, lParam) {
     MouseEvent["x"] := AHKHID_GetInputInfo(lParam, II_MSE_LASTX)
     MouseEvent["y"] := AHKHID_GetInputInfo(lParam, II_MSE_LASTY)
 
-    ;Get flags and add to listbox
     flags := AHKHID_GetInputInfo(lParam, II_MSE_BUTTONFLAGS)
     If (flags & RI_MOUSE_LEFT_BUTTON_DOWN)
         MouseEvent["mouse_buttons"].Push("left_down")
@@ -84,34 +99,10 @@ InputMsg(wParam, lParam) {
     }
 
     MouseQueuePush(MouseEvent)
+    ; if some mouse button was pressed, send queue instantly
     if (MouseEvent["mouse_buttons"].Length() > 0) {
         ControlMouse()
     }
-}
-
-HTTPGet(URL, Auth) {
-    oHTTP := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-    oHTTP.Open("GET", URL , False)
-    oHTTP.SetRequestHeader("Authorization", Auth)
-    oHTTP.Send()
-}
-
-Key(AHKCode, Code) {
-    global KeysDown
-    if (KeysDown.hasKey(AHKCode)) {
-        Return
-    }
-    KeysDown[AHKCode] := True
-    global VfioCredentials
-    HTTPGet("http://es.lan:9888/key?code=" Code "&state=0", VfioCredentials)
-}
-
-KeyUp(AHKCode, Code) {
-    global KeysDown
-    AHKCode := SubStr(AHKCode, 1, -3)
-    KeysDown.Delete(AHKCode)
-    global VfioCredentials
-    HTTPGet("http://es.lan:9888/key?code=" Code "&state=1", VfioCredentials)
 }
 
 ControlMouse() {
@@ -137,7 +128,28 @@ ControlMouse() {
     }
 }
 
-; exit
+; keyboard functions
+;___________________
+Key(AHKCode, Code) {
+    global KeysDown
+    if (KeysDown.hasKey(AHKCode)) {
+        Return
+    }
+    KeysDown[AHKCode] := True
+    global VfioCredentials
+    HTTPGet("http://es.lan:9888/key?code=" Code "&state=0", VfioCredentials)
+}
+
+KeyUp(AHKCode, Code) {
+    global KeysDown
+    AHKCode := SubStr(AHKCode, 1, -3)
+    KeysDown.Delete(AHKCode)
+    global VfioCredentials
+    HTTPGet("http://es.lan:9888/key?code=" Code "&state=1", VfioCredentials)
+}
+
+; key bindings
+;_____________
 SC03B::
     Key(A_ThisHotkey, 67)
     KeyUp(A_ThisHotkey, 67)
@@ -292,9 +304,9 @@ LWin Up::KeyUp(A_ThisHotkey, 133)
 LAlt::Key(A_ThisHotkey, 64)
 LAlt Up::KeyUp(A_ThisHotkey, 64)
 SC07B::Key(A_ThisHotkey, 102) ; muhenkan
-SC07B Up::KeyUp(A_ThisHotkey, 102) ; muhenkan
+SC07B Up::KeyUp(A_ThisHotkey, 102)
 SC039::Key(A_ThisHotkey, 65) ; space
-SC039 Up::KeyUp(A_ThisHotkey, 65) ; space
+SC039 Up::KeyUp(A_ThisHotkey, 65)
 SC079::Key(A_ThisHotkey, 100) ; henkan
 SC079 Up::KeyUp(A_ThisHotkey, 100)
 SC070::Key(A_ThisHotkey, 101) ; hira/kata (BS)
@@ -329,7 +341,7 @@ Left::Key(A_ThisHotkey, 113)
 Left Up::KeyUp(A_ThisHotkey, 113)
 Right::Key(A_ThisHotkey, 114)
 Right Up::KeyUp(A_ThisHotkey, 114)
-; mouse
+; disable mouse buttons
 LButton::
 MButton::
 RButton::

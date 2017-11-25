@@ -27,8 +27,8 @@ AHKHID_Register(1, 2, GuiHandle, RIDEV_INPUTSINK)
 ; the events are stored to MouseQueue first
 OnMessage(WM_INPUT, "InputMsg")
 
-; every 30 ms, check for new mouse events, send them, and clear the queue
-SetTimer, ControlMouse, 30
+; every 15 ms, check for new mouse events, send them, and clear the queue
+SetTimer, ControlMouse, 15
 
 ; disable mouse movement in this OS
 BlockInput, MouseMove

@@ -120,11 +120,14 @@ ControlMouse() {
     MouseQueueClear()
     if (x != 0 or y != 0 or MouseButtonsArray.Length() != 0) {
         MouseButtons := ""
-        For _, MouseButton in MouseButtonsArray {
-            MouseButtons .= "," . MouseButton
+        For Key, MouseButton in MouseButtonsArray {
+            MouseButtons .= MouseButton
+            if (Key < MouseButtonsArray.Length()) {
+                MouseButtons .= ","
+            }
         }
         global VfioCredentials
-        HTTPGet("http://es.lan:9888/mouse?x=" x "&y=" y "&mouse_buttons=" MouseButton, VfioCredentials)
+        HTTPGet("http://es.lan:9888/mouse?x=" x "&y=" y "&mouse_buttons=" MouseButtons, VfioCredentials)
     }
 }
 

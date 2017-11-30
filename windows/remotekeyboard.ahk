@@ -42,6 +42,13 @@ PrintLn(String) {
     FileAppend, %String%`n, *, UTF-8
 }
 
+EscapeText(String) {
+    String := StrReplace(String, "\", "\\")
+    String := StrReplace(String, "`n", "\n")
+    String := StrReplace(String, " ", "\s")
+    Return String
+}
+
 ; mouse functions
 ;________________
 MouseQueuePush(Event) {
@@ -163,6 +170,11 @@ SC03B::
     KeyUp(A_ThisHotkey, 67)
     PrintLn("quit")
     ExitApp
+
+AppsKey::
+    String := EscapeText(Clipboard)
+    PrintLn("clipboard " String)
+    Return
 
 ; F1 - F12
 ;SC03B::Key(A_ThisHotkey, 67)
@@ -320,7 +332,7 @@ SC079::Key(A_ThisHotkey, 100) ; henkan
 SC079 Up::KeyUp(A_ThisHotkey, 100)
 SC070::Key(A_ThisHotkey, 101) ; hira/kata (BS)
 SC070 Up::Keyup(A_ThisHotkey, 101)
-AppsKey::Return
+;AppsKey::Return
 ; nav
 PrintScreen::Key(A_ThisHotkey, 107)
 PrintScreen Up::KeyUp(A_ThisHotkey, 107)

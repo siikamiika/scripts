@@ -9,6 +9,7 @@ global key_027_mhk := {1: "Ö", 2: "ö"}
 global key_028_mhk := {1: "Ä", 2: "ä"}
 global key_027 := {1: ":", 2: "`;"}
 global key_028 := {1: """", 2: "'"}
+global vfio_hotkeys_started := False
 
 
 Finnish(on) {
@@ -174,5 +175,9 @@ SC070:: Send, {BS}
     Return
 F2::
     Run, remotekeyboard.bat,, Hide
+    if (!vfio_hotkeys_started) {
+        Run, vfio_hotkeys.bat,, Hide
+        vfio_hotkeys_started = True
+    }
     Return
 F1::Return

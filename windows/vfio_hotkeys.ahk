@@ -20,7 +20,7 @@ F4::
 ; mhk
 *~SC07B::
     IniRead, VfioCredentials, conf.ini, Vfio, Credentials
-    HTTPGet("http://es.lan:9888/voip?do=press", VfioCredentials)
+    HTTPGet("http://localhost:9888/voip?do=press", VfioCredentials)
     KeyWait, SC07B
-    HTTPGet("http://es.lan:9888/voip?do=release", VfioCredentials)
+    HTTPGet("http://localhost:9888/voip?do=release", VfioCredentials)
     Return

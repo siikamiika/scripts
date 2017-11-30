@@ -33,13 +33,13 @@ SetTimer, ControlMouse, 15
 ; disable mouse movement in this OS
 BlockInput, MouseMove
 
+; authenticate
+PrintLn(VfioCredentials)
+
 ; common functions
 ;_________________
-HTTPGet(URL, Auth) {
-    oHTTP := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-    oHTTP.Open("GET", URL , False)
-    oHTTP.SetRequestHeader("Authorization", Auth)
-    oHTTP.Send()
+PrintLn(String) {
+    FileAppend, %String%`n, *, UTF-8
 }
 
 ; mouse functions
@@ -98,6 +98,11 @@ InputMsg(wParam, lParam) {
         }
     }
 
+    ; work around some strange bug
+    if (MouseEvent["mouse_buttons"].Length() > 1) {
+        Return
+    }
+
     MouseQueuePush(MouseEvent)
     ; if some mouse button was pressed, send queue instantly
     if (MouseEvent["mouse_buttons"].Length() > 0) {
@@ -127,7 +132,7 @@ ControlMouse() {
             }
         }
         global VfioCredentials
-        HTTPGet("http://es.lan:9888/mouse?x=" x "&y=" y "&mouse_buttons=" MouseButtons, VfioCredentials)
+        PrintLn("mouse " x "," y " " MouseButtons)
     }
 }
 
@@ -140,7 +145,7 @@ Key(AHKCode, Code) {
     }
     KeysDown[AHKCode] := True
     global VfioCredentials
-    HTTPGet("http://es.lan:9888/key?code=" Code "&state=0", VfioCredentials)
+    PrintLn("keydown " Code)
 }
 
 KeyUp(AHKCode, Code) {
@@ -148,7 +153,7 @@ KeyUp(AHKCode, Code) {
     AHKCode := SubStr(AHKCode, 1, -3)
     KeysDown.Delete(AHKCode)
     global VfioCredentials
-    HTTPGet("http://es.lan:9888/key?code=" Code "&state=1", VfioCredentials)
+    PrintLn("keyup " Code)
 }
 
 ; key bindings
@@ -156,6 +161,7 @@ KeyUp(AHKCode, Code) {
 SC03B::
     Key(A_ThisHotkey, 67)
     KeyUp(A_ThisHotkey, 67)
+    PrintLn("quit")
     ExitApp
 
 ; F1 - F12

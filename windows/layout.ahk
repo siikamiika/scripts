@@ -173,6 +173,6 @@ SC070:: Send, {BS}
     Finnish(true)
     Return
 F2::
-    Run, remotekeyboard.ahk
+    Run, remotekeyboard.bat,, Hide
     Return
 F1::Return

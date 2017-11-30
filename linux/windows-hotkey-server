@@ -31,6 +31,20 @@ def unescape_newlines_and_spaces(text):
 
     return result.getvalue()
 
+def escape_newlines_and_spaces(text):
+    result = StringIO()
+    for char in text:
+        if char == '\\':
+            result.write(r'\\')
+        elif char == '\n':
+            result.write(r'\n')
+        elif char == ' ':
+            result.write(r'\s')
+        else:
+            result.write(char)
+
+    return result.getvalue()
+
 
 class InputServerHandler(socketserver.StreamRequestHandler):
 
@@ -53,8 +67,12 @@ class InputServerHandler(socketserver.StreamRequestHandler):
                 self.server.input.key_press(int(self.data[1]))
             elif self.data[0] == 'keyup':
                 self.server.input.key_release(int(self.data[1]))
-            elif self.data[0] == 'clipboard':
-                self.handle_clipboard()
+            elif self.data[0] == 'clipboard_copy':
+                self.handle_clipboard_copy()
+            elif self.data[0] == 'clipboard_paste':
+                self.handle_clipboard_paste()
+            elif self.data[0] == 'primary_paste':
+                self.handle_primary_paste()
 
     def handle_mouse(self):
         x, y = map(int, self.data[1].split(','))
@@ -91,12 +109,20 @@ class InputServerHandler(socketserver.StreamRequestHandler):
                 self.server.input.button_press(5)
                 self.server.input.button_release(5)
 
-    def handle_clipboard(self):
+    def handle_clipboard_copy(self):
         if len(self.data) < 2:
             return
         text = unescape_newlines_and_spaces(self.data[1])
         pyperclip.copy(text)
         pyperclip.copy(text, primary=True)
+
+    def handle_clipboard_paste(self):
+        text = escape_newlines_and_spaces(pyperclip.paste())
+        self.wfile.write('clipboard_paste {}\n'.format(text).encode('utf-8'))
+
+    def handle_primary_paste(self):
+        text = escape_newlines_and_spaces(pyperclip.paste(primary=True))
+        self.wfile.write('primary_paste {}\n'.format(text).encode('utf-8'))
 
 
 class InputServer(socketserver.ThreadingMixIn, socketserver.TCPServer):

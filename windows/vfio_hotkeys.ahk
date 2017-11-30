@@ -33,3 +33,11 @@ F4::
     KeyWait, SC07B
     PrintLn("keyup 102")
     Return
+
+AppsKey::
+    ComObjCreate("WScript.Shell").Run("python.exe paste.py clipboard", 0, False).StdOut.ReadAll()
+    Return
+
++AppsKey::
+    ComObjCreate("WScript.Shell").Run("python.exe paste.py primary", 0, False).StdOut.ReadAll()
+    Return

@@ -173,7 +173,7 @@ SC03B::
 
 AppsKey::
     String := EscapeText(Clipboard)
-    PrintLn("clipboard " String)
+    PrintLn("clipboard_copy " String)
     Return
 
 ; F1 - F12

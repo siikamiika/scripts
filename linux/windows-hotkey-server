@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import socketserver
 from os.path import expanduser
-from base64 import standard_b64encode, b64decode
-from pykeyboard import PyKeyboard
 from pymouse.x11 import display_manager
 from pymouse import PyMouse
 from Xlib.display import Display
@@ -14,7 +12,7 @@ class InputServerHandler(socketserver.StreamRequestHandler):
     def handle(self):
         #print(self.client_address[0])
         client_auth = self.rfile.readline().strip()
-        if auth != client_auth:
+        if client_auth != self.server.auth:
             #print('invalid auth: {}'.format(auth))
             return
         while True:
@@ -23,43 +21,46 @@ class InputServerHandler(socketserver.StreamRequestHandler):
             if self.data[0] == 'quit':
                 break
             elif self.data[0] == 'mouse':
-                x, y = map(int, self.data[1].split(','))
-                if abs(x) + abs(y) > 0:
-                    self.server.input.mouse_move_relative(x, y)
-                if len(self.data) < 3:
-                    continue
-                mouse_buttons = self.data[2].split(',')
-                for mouse_button in mouse_buttons:
-                    if mouse_button == 'left_down':
-                        self.server.input.button_press(1)
-                    elif mouse_button == 'left_up':
-                        self.server.input.button_release(1)
-                    elif mouse_button == 'right_down':
-                        self.server.input.button_press(3)
-                    elif mouse_button == 'right_up':
-                        self.server.input.button_release(3)
-                    elif mouse_button == 'middle_down':
-                        self.server.input.button_press(2)
-                    elif mouse_button == 'middle_up':
-                        self.server.input.button_release(2)
-                    elif mouse_button == 'xbutton1_down':
-                        self.server.input.button_press(8)
-                    elif mouse_button == 'xbutton1_up':
-                        self.server.input.button_release(8)
-                    elif mouse_button == 'xbutton2_down':
-                        self.server.input.button_press(9)
-                    elif mouse_button == 'xbutton2_up':
-                        self.server.input.button_release(9)
-                    elif mouse_button == 'wheel_up':
-                        self.server.input.button_press(4)
-                        self.server.input.button_release(4)
-                    elif mouse_button == 'wheel_down':
-                        self.server.input.button_press(5)
-                        self.server.input.button_release(5)
+                self.handle_mouse()
             elif self.data[0] == 'keydown':
                 self.server.input.key_press(int(self.data[1]))
             elif self.data[0] == 'keyup':
                 self.server.input.key_release(int(self.data[1]))
+
+    def handle_mouse(self):
+        x, y = map(int, self.data[1].split(','))
+        if abs(x) + abs(y) > 0:
+            self.server.input.mouse_move_relative(x, y)
+        if len(self.data) < 3:
+            return
+        mouse_buttons = self.data[2].split(',')
+        for mouse_button in mouse_buttons:
+            if mouse_button == 'left_down':
+                self.server.input.button_press(1)
+            elif mouse_button == 'left_up':
+                self.server.input.button_release(1)
+            elif mouse_button == 'right_down':
+                self.server.input.button_press(3)
+            elif mouse_button == 'right_up':
+                self.server.input.button_release(3)
+            elif mouse_button == 'middle_down':
+                self.server.input.button_press(2)
+            elif mouse_button == 'middle_up':
+                self.server.input.button_release(2)
+            elif mouse_button == 'xbutton1_down':
+                self.server.input.button_press(8)
+            elif mouse_button == 'xbutton1_up':
+                self.server.input.button_release(8)
+            elif mouse_button == 'xbutton2_down':
+                self.server.input.button_press(9)
+            elif mouse_button == 'xbutton2_up':
+                self.server.input.button_release(9)
+            elif mouse_button == 'wheel_up':
+                self.server.input.button_press(4)
+                self.server.input.button_release(4)
+            elif mouse_button == 'wheel_down':
+                self.server.input.button_press(5)
+                self.server.input.button_release(5)
 
 
 class InputServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -68,7 +69,9 @@ class InputServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
     def __init__(self, *args, **kwargs):
         self.input = kwargs.pop('input')
-        super(self.__class__, self).__init__(*args, **kwargs)
+        self.auth = kwargs.pop('auth')
+        super(InputServer, self).__init__(*args, **kwargs)
+
 
 class XorgInput(object):
 
@@ -96,9 +99,13 @@ class XorgInput(object):
         with display_manager(self.display) as d:
             fake_input(d, X.ButtonRelease, code)
 
-if __name__ == '__main__':
+
+def main():
     xorg_input = XorgInput()
     with open(expanduser('~/.windows-hotkey-server'), 'rb') as f:
         auth = f.read().strip()
-    input_server = InputServer(('127.0.0.1', 9888), InputServerHandler, input=xorg_input)
+    input_server = InputServer(('127.0.0.1', 9888), InputServerHandler, input=xorg_input, auth=auth)
     input_server.serve_forever()
+
+if __name__ == '__main__':
+    main()

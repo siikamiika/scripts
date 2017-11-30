@@ -151,6 +151,11 @@ Capslock::Esc
 SC070:: Send, {BS}
 ^SC070::Send, ^{BS}
 
+; clipboard
+^#Space::
+    Clipboard := ""
+    Return
+
 ; change layout
 !+1::
     Send, ^{F1} ; Precomposition | Ctrl F1 | Deactivate IME

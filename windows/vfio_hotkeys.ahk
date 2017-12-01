@@ -22,9 +22,9 @@ CloseConnection() {
 ; hotkeys
 ; change main monitor from windows to linux
 F4::
-    Run nircmdc monitor off ; monitor will look for another input
+    Run, nircmdc monitor off,, Hide ; monitor will look for another input
     Sleep 1000
-    Run taskkill /im nircmdc.exe /f
+    Run, taskkill /im nircmdc.exe /f,, Hide
     Return
 
 ; mhk

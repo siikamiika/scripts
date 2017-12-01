@@ -35,9 +35,9 @@ F4::
     Return
 
 AppsKey::
-    ComObjCreate("WScript.Shell").Run("python.exe paste.py clipboard", 0, False).StdOut.ReadAll()
+    Run, python paste.py clipboard,, Hide
     Return
 
 +AppsKey::
-    ComObjCreate("WScript.Shell").Run("python.exe paste.py primary", 0, False).StdOut.ReadAll()
+    Run, python paste.py primary,, Hide
     Return

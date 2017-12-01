@@ -178,11 +178,20 @@ SC070:: Send, {BS}
     Menu, Tray, Icon, fi.ico
     Finnish(true)
     Return
-F2::
+*F2::
+    if (GetKeyState("SC07B", "P")) {
+        Send, {Blind}{F2}
+        Return
+    }
     Run, remotekeyboard.bat,, Hide
     if (!vfio_hotkeys_started) {
         Run, vfio_hotkeys.bat,, Hide
         vfio_hotkeys_started = True
     }
     Return
-F1::Return
+*F1::
+    if (GetKeyState("SC07B", "P")) {
+        Send, {Blind}{F1}
+        Return
+    }
+    Return

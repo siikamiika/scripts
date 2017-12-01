@@ -39,7 +39,7 @@ def read_credentials():
 def socket_readline(sock):
     result = BytesIO()
     buffer = sock.recv(4096)
-    while True:
+    while buffer:
         if b'\n' in buffer:
             line, buffer = buffer.split(b'\n', 1)
             result.write(line)

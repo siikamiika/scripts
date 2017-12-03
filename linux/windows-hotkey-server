@@ -3,11 +3,7 @@ import socketserver
 from os.path import expanduser
 from io import StringIO
 import pyperclip
-from pymouse.x11 import display_manager
-from pymouse import PyMouse
-from Xlib.display import Display
-from Xlib import X
-from Xlib.ext.xtest import fake_input
+import uinput
 
 def unescape_newlines_and_spaces(text):
     result = StringIO()
@@ -64,9 +60,9 @@ class InputServerHandler(socketserver.StreamRequestHandler):
             elif self.data[0] == 'mouse':
                 self.handle_mouse()
             elif self.data[0] == 'keydown':
-                self.server.input.key_press(int(self.data[1]))
+                self.server.input.key_press(int(self.data[1]) - 8)
             elif self.data[0] == 'keyup':
-                self.server.input.key_release(int(self.data[1]))
+                self.server.input.key_release(int(self.data[1]) - 8)
             elif self.data[0] == 'clipboard_copy':
                 self.handle_clipboard_copy()
             elif self.data[0] == 'clipboard_paste':
@@ -85,31 +81,29 @@ class InputServerHandler(socketserver.StreamRequestHandler):
         mouse_buttons = self.data[2].split(',')
         for mouse_button in mouse_buttons:
             if mouse_button == 'left_down':
-                self.server.input.button_press(1)
+                self.server.input.button_press(uinput.BTN_LEFT)
             elif mouse_button == 'left_up':
-                self.server.input.button_release(1)
+                self.server.input.button_release(uinput.BTN_LEFT)
             elif mouse_button == 'right_down':
-                self.server.input.button_press(3)
+                self.server.input.button_press(uinput.BTN_RIGHT)
             elif mouse_button == 'right_up':
-                self.server.input.button_release(3)
+                self.server.input.button_release(uinput.BTN_RIGHT)
             elif mouse_button == 'middle_down':
-                self.server.input.button_press(2)
+                self.server.input.button_press(uinput.BTN_MIDDLE)
             elif mouse_button == 'middle_up':
-                self.server.input.button_release(2)
+                self.server.input.button_release(uinput.BTN_MIDDLE)
             elif mouse_button == 'xbutton1_down':
-                self.server.input.button_press(8)
+                self.server.input.button_press(uinput.BTN_SIDE)
             elif mouse_button == 'xbutton1_up':
-                self.server.input.button_release(8)
+                self.server.input.button_release(uinput.BTN_SIDE)
             elif mouse_button == 'xbutton2_down':
-                self.server.input.button_press(9)
+                self.server.input.button_press(uinput.BTN_EXTRA)
             elif mouse_button == 'xbutton2_up':
-                self.server.input.button_release(9)
+                self.server.input.button_release(uinput.BTN_EXTRA)
             elif mouse_button == 'wheel_up':
-                self.server.input.button_press(4)
-                self.server.input.button_release(4)
+                self.server.input.mouse_wheel(1)
             elif mouse_button == 'wheel_down':
-                self.server.input.button_press(5)
-                self.server.input.button_release(5)
+                self.server.input.mouse_wheel(-1)
 
     def handle_clipboard_copy(self):
         if len(self.data) < 2:
@@ -137,38 +131,53 @@ class InputServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         super(InputServer, self).__init__(*args, **kwargs)
 
 
-class XorgInput(object):
+class Input(object):
 
     def __init__(self):
-        self.display = Display(None)
-        self.mouse = PyMouse()
+        self.input = uinput.Device(self._events())
+
+    def _events(self):
+        events = [
+            uinput.REL_X,
+            uinput.REL_Y,
+            uinput.REL_WHEEL,
+            uinput.BTN_LEFT,
+            uinput.BTN_MIDDLE,
+            uinput.BTN_RIGHT,
+            uinput.BTN_SIDE,
+            uinput.BTN_EXTRA,
+            ]
+
+        for i in range(1, 127):
+            events.append((0x01, i))
+
+        return events
 
     def key_press(self, code):
-        with display_manager(self.display) as d:
-            fake_input(d, X.KeyPress, code)
+        self.input.emit((0x01, code), 1)
 
     def key_release(self, code):
-        with display_manager(self.display) as d:
-            fake_input(d, X.KeyRelease, code)
+        self.input.emit((0x01, code), 0)
 
     def mouse_move_relative(self, x, y):
-        pos = self.mouse.position()
-        self.mouse.move(*map(sum, zip(pos, (x, y))))
+        self.input.emit(uinput.REL_X, x, syn=False)
+        self.input.emit(uinput.REL_Y, y)
 
     def button_press(self, code):
-        with display_manager(self.display) as d:
-            fake_input(d, X.ButtonPress, code)
+        self.input.emit(code, 1)
 
     def button_release(self, code):
-        with display_manager(self.display) as d:
-            fake_input(d, X.ButtonRelease, code)
+        self.input.emit(code, 0)
+
+    def mouse_wheel(self, delta):
+        self.input.emit(uinput.REL_WHEEL, delta)
 
 
 def main():
-    xorg_input = XorgInput()
+    linux_input = Input()
     with open(expanduser('~/.windows-hotkey-server'), 'rb') as f:
         auth = f.read().strip()
-    input_server = InputServer(('127.0.0.1', 9888), InputServerHandler, input=xorg_input, auth=auth)
+    input_server = InputServer(('127.0.0.1', 9888), InputServerHandler, input=linux_input, auth=auth)
     input_server.serve_forever()
 
 if __name__ == '__main__':

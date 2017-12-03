@@ -14,7 +14,6 @@ WM_INPUT := 0x00FF
 ;________
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
 KeysDown := {}
-MouseQueue := []
 
 ; init
 ;_____
@@ -24,11 +23,7 @@ GuiHandle := WinExist()
 Gui, Show, Hide
 AHKHID_Register(1, 2, GuiHandle, RIDEV_INPUTSINK)
 
-; the events are stored to MouseQueue first
 OnMessage(WM_INPUT, "InputMsg")
-
-; every 15 ms, check for new mouse events, send them, and clear the queue
-SetTimer, ControlMouse, 15
 
 ; disable mouse movement in this OS
 BlockInput, MouseMove
@@ -51,20 +46,6 @@ EscapeText(String) {
 
 ; mouse functions
 ;________________
-MouseQueuePush(Event) {
-    global MouseQueue
-    MouseQueue.Push(Event)
-}
-
-MouseQueueGet() {
-    global MouseQueue
-    return MouseQueue
-}
-
-MouseQueueClear() {
-    global MouseQueue
-    MouseQueue := []
-}
 
 InputMsg(wParam, lParam) {
     Local flags, MouseEvent
@@ -105,40 +86,19 @@ InputMsg(wParam, lParam) {
         }
     }
 
+    ControlMouse(MouseEvent)
+}
+
+ControlMouse(MouseEvent) {
     ; work around some strange bug
     if (MouseEvent["mouse_buttons"].Length() > 1) {
         Return
     }
 
-    MouseQueuePush(MouseEvent)
-    ; if some mouse button was pressed, send queue instantly
-    if (MouseEvent["mouse_buttons"].Length() > 0) {
-        ControlMouse()
-    }
-}
-
-ControlMouse() {
-    x := 0
-    y := 0
-    MouseButtonsArray := []
-    MouseQueue := MouseQueueGet()
-    For _, Event in MouseQueue {
-        x += Event["x"]
-        y += Event["y"]
-        For _, MouseButton in Event["mouse_buttons"] {
-            MouseButtonsArray.Push(MouseButton)
-        }
-    }
-    MouseQueueClear()
-    if (x != 0 or y != 0 or MouseButtonsArray.Length() != 0) {
-        MouseButtons := ""
-        For Key, MouseButton in MouseButtonsArray {
-            MouseButtons .= MouseButton
-            if (Key < MouseButtonsArray.Length()) {
-                MouseButtons .= ","
-            }
-        }
-        global VfioCredentials
+    x := MouseEvent["x"]
+    y := MouseEvent["y"]
+    if (x != 0 or y != 0 or MouseEvent["mouse_buttons"].Length() != 0) {
+        MouseButtons := MouseEvent["mouse_buttons"][1]
         PrintLn("mouse " x "," y " " MouseButtons)
     }
 }
@@ -151,7 +111,6 @@ Key(AHKCode, Code) {
         Return
     }
     KeysDown[AHKCode] := True
-    global VfioCredentials
     PrintLn("keydown " Code)
 }
 

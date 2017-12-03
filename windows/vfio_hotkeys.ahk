@@ -5,6 +5,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 ; globals
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
+global AudioPID := -1
 
 ; init
 PrintLn(VfioCredentials)
@@ -20,6 +21,17 @@ CloseConnection() {
 }
 
 ; hotkeys
+; toggle audio
+F3::
+    If (AudioPID != -1) {
+        Process, Close, %AudioPID%
+        Process, Close, linco.exe
+        AudioPID := -1
+    } Else {
+        Run, python.exe stream-linco.py,, Hide, AudioPID
+    }
+    Return
+
 ; change main monitor from windows to linux
 F4::
     Run, nircmdc monitor off,, Hide ; monitor will look for another input

@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+import socketserver
+from subprocess import Popen, PIPE
+from os.path import expanduser
+
+class Pacat(object):
+
+    def __init__(self, lat='1', fmt='s16le', rate='48000', vol='65536'):
+        self.process = Popen([
+            'pacat',
+            '--playback',
+            '--latency={}'.format(lat),
+            '--format={}'.format(fmt),
+            '--rate={}'.format(rate),
+            '--volume={}'.format(vol),
+            ], stdin=PIPE)
+
+    def feed_audio(self, data):
+        self.process.stdin.write(data)
+        self.process.stdin.flush()
+
+    def close(self):
+        self.process.terminate()
+        self.process.wait()
+
+
+class PacatConnectionHandler(socketserver.BaseRequestHandler):
+
+    def handle(self):
+        self.request.settimeout(1.0)
+        data = self.request.recv(8192)
+
+        auth, data = data[:len(self.server.auth)], data[len(self.server.auth):]
+        if auth != self.server.auth:
+            return
+
+        pacat = Pacat()
+
+        if not data:
+            data = self.request.recv(8192)
+        while data:
+            pacat.feed_audio(data)
+            data = self.request.recv(8192)
+
+        pacat.close()
+
+
+class PacatServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+
+    allow_reuse_address = True
+
+    def __init__(self, *args, **kwargs):
+        self.auth = kwargs.pop('auth')
+        super(PacatServer, self).__init__(*args, **kwargs)
+
+
+def main():
+    with open(expanduser('~/.windows-hotkey-server'), 'rb') as f:
+        auth = f.read().strip()
+    pacat_server = PacatServer(('127.0.0.1', 9889), PacatConnectionHandler, auth=auth)
+    pacat_server.serve_forever()
+
+if __name__ == '__main__':
+    main()

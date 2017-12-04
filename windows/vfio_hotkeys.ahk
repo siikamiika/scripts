@@ -16,6 +16,13 @@ PrintLn(String) {
     FileAppend, %String%`n, *, UTF-8
 }
 
+EscapeText(String) {
+    String := StrReplace(String, "\", "\\")
+    String := StrReplace(String, "`n", "\n")
+    String := StrReplace(String, " ", "\s")
+    Return String
+}
+
 CloseConnection() {
     PrintLn("quit")
 }
@@ -48,6 +55,23 @@ F4::
     PrintLn("keydown 102")
     KeyWait, SC07B
     PrintLn("keyup 102")
+    Return
+
+; GoldenDict
+*!~LButton::
+    KeyWait, LButton
+    If (!GetKeyState("LWin", "P")) {
+        Return
+    }
+    Send, ^c
+    Sleep, 50
+    String := EscapeText(Clipboard)
+    PrintLn("clipboard_copy " String)
+    PrintLn("keydown 37")
+    PrintLn("keydown 102")
+    KeyWait, SC07B
+    PrintLn("keyup 102")
+    PrintLn("keyup 37")
     Return
 
 AppsKey::

@@ -69,7 +69,6 @@ F4::
     PrintLn("clipboard_copy " String)
     PrintLn("keydown 37")
     PrintLn("keydown 102")
-    KeyWait, SC07B
     PrintLn("keyup 102")
     PrintLn("keyup 37")
     Return

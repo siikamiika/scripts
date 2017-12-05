@@ -51,7 +51,7 @@ class InputServerHandler(socketserver.StreamRequestHandler):
         if self.rfile.readline(self.LINE_MAX_LENGTH).strip() != self.server.auth:
             #print('invalid auth: {}'.format(auth))
             return
-        data = self.rfile.readline(self.LINE_MAX_LENGTH)
+        data = self.rfile.readline()
         while data:
             self.data = data.decode('utf-8').strip().split(' ')
             #print(' '.join(self.data))
@@ -70,7 +70,7 @@ class InputServerHandler(socketserver.StreamRequestHandler):
             elif self.data[0] == 'primary_paste':
                 self.handle_primary_paste()
 
-            data = self.rfile.readline(self.LINE_MAX_LENGTH)
+            data = self.rfile.readline()
 
     def handle_mouse(self):
         x, y = map(int, self.data[1].split(','))

@@ -34,10 +34,9 @@ F3::
         SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
         Sleep, 500
         Process, Close, %AudioPID%
-        Process, Close, linco.exe
         AudioPID := -1
     } Else {
-        Run, python.exe stream-linco.py,, Hide, AudioPID
+        Run, python.exe stream-pyaudio.py,, Hide, AudioPID
         Sleep, 500
         SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
     }

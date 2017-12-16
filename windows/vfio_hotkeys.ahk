@@ -28,6 +28,21 @@ CloseConnection() {
 }
 
 ; hotkeys
+*F1::
+    if (GetKeyState("SC07B", "P")) {
+        Send, {Blind}{F1}
+        Return
+    }
+    Return
+
+*F2::
+    if (GetKeyState("SC07B", "P")) {
+        Send, {Blind}{F2}
+        Return
+    }
+    Run, remotekeyboard.bat,, Hide
+    Return
+
 ; toggle audio
 F3::
     If (AudioPID != -1) {

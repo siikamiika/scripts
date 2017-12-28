@@ -44,21 +44,25 @@ CloseConnection() {
     Return
 
 ; toggle audio
-F3::
-    If (AudioPID != -1) {
-        SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
-        Sleep, 500
-        Process, Close, %AudioPID%
-        AudioPID := -1
-    } Else {
-        Run, python.exe stream-pyaudio.py,, Hide, AudioPID
-        Sleep, 500
-        SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
-    }
-    Return
+; F3::
+;     If (AudioPID != -1) {
+;         SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
+;         Sleep, 500
+;         Process, Close, %AudioPID%
+;         AudioPID := -1
+;     } Else {
+;         Run, python.exe stream-pyaudio.py,, Hide, AudioPID
+;         Sleep, 500
+;         SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
+;     }
+;     Return
 
 ; change main monitor from windows to linux
-F4::
+*F4::
+    if (GetKeyState("SC07B", "P")) {
+        Send, {Blind}{F4}
+        Return
+    }
     Run, nircmdc monitor off,, Hide ; monitor will look for another input
     Sleep 1000
     Run, taskkill /im nircmdc.exe /f,, Hide

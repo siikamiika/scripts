@@ -59,7 +59,7 @@ CloseConnection() {
 
 ; change main monitor from windows to linux
 *F4::
-    if (GetKeyState("SC07B", "P")) {
+    if (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P")) {
         Send, {Blind}{F4}
         Return
     }

@@ -5,7 +5,8 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 
 ; globals
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
-global AudioPID := -1
+; global AudioPID := -1
+global FunctionKeysOn := False
 
 ; init
 PrintLn(VfioCredentials)
@@ -28,15 +29,24 @@ CloseConnection() {
 }
 
 ; hotkeys
+SC001::
+    FunctionKeysOn := !FunctionKeysOn
+    If (FunctionKeysOn) {
+        SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
+    } Else {
+        SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
+    }
+    Return
+
 *F1::
-    if (GetKeyState("SC07B", "P")) {
+    If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
         Send, {Blind}{F1}
         Return
     }
     Return
 
 *F2::
-    if (GetKeyState("SC07B", "P")) {
+    If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
         Send, {Blind}{F2}
         Return
     }
@@ -59,7 +69,7 @@ CloseConnection() {
 
 ; change main monitor from windows to linux
 *F4::
-    if (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P")) {
+    If (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P") or FunctionKeysOn) {
         Send, {Blind}{F4}
         Return
     }

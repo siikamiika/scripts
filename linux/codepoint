@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+from subprocess import call
+import pyperclip
+
+pyperclip.set_clipboard('xclip')
+
+def char_to_int(char, encoding):
+    try:
+        return int.from_bytes(char.encode(encoding), 'big')
+    except:
+        return 0x0
+
+def readable_bytes(char, encoding):
+    try:
+        return ' '.join([hex(byte) for byte in char[0].encode(encoding)])
+    except:
+        return ''
+
+def notify_codepoints(text):
+    call(['notify-send', '-t', '60000', text, '\n'.join([
+        'Unicode: {} {}'.format(hex(ord(text[0])), text[0]),
+        *[' ' * 9 + hex(ord(c)) + ' ' + c for c in text[1:]],
+        '',
+        'UTF-8:   {} {}'.format(readable_bytes(text[0], 'utf-8'), text[0]),
+        *[' ' * 9 + readable_bytes(c, 'utf-8') + ' ' + c for c in text[1:]],
+        '',
+        'Latin-1: {} {}'.format(readable_bytes(text[0], 'latin-1'), text[0]),
+        *[' ' * 9 + readable_bytes(c, 'latin-1') + ' ' + c for c in text[1:]],
+        '',
+        'JIS:     {} {}'.format(hex(char_to_int(text[0], 'shift-jis')), text[0]),
+        *[' ' * 9 + hex(char_to_int(c, 'shift-jis')) + ' ' + c for c in text[1:]]
+    ])])
+
+def main():
+    notify_codepoints(pyperclip.paste(primary=True))
+
+if __name__ == '__main__':
+    main()

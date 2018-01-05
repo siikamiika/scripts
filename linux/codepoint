@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import unicodedata
 from subprocess import call
 import pyperclip
 
@@ -18,8 +19,8 @@ def readable_bytes(char, encoding):
 
 def notify_codepoints(text):
     call(['notify-send', '-t', '60000', text, '\n'.join([
-        'Unicode: {} {}'.format(hex(ord(text[0])), text[0]),
-        *[' ' * 9 + hex(ord(c)) + ' ' + c for c in text[1:]],
+        'Unicode: {} {} {}'.format(hex(ord(text[0])), text[0], unicodedata.name(text[0], '')),
+        *[' ' * 9 + hex(ord(c)) + ' ' + c + ' ' + unicodedata.name(c, '') for c in text[1:]],
         '',
         'UTF-8:   {} {}'.format(readable_bytes(text[0], 'utf-8'), text[0]),
         *[' ' * 9 + readable_bytes(c, 'utf-8') + ' ' + c for c in text[1:]],

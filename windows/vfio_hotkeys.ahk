@@ -101,6 +101,20 @@ SC001::
     PrintLn("keyup 37")
     Return
 
+; codepoint
+^#c::
+    Send, ^c
+    Sleep, 50
+    String := EscapeText(Clipboard)
+    PrintLn("clipboard_copy " String)
+    PrintLn("keydown 37")
+    PrintLn("keydown 133")
+    PrintLn("keydown 54")
+    PrintLn("keyup 54")
+    PrintLn("keyup 37")
+    PrintLn("keyup 133")
+    Return
+
 AppsKey::
     Run, python paste.py clipboard,, Hide
     Return

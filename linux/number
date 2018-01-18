@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+from sys import argv
+from subprocess import call
+import pyperclip
+from num2words import num2words
+
+pyperclip.set_clipboard('xclip')
+
+def notify_number_representations(number, base):
+    if base == 'dec':
+        number = int(number.replace(',', ''))
+    elif base == 'hex':
+        number = int(number, base=16)
+    elif base == 'bin':
+        number = int(number, base=2)
+
+    bit_length = number.bit_length()
+    byte_length = (bit_length + 7) // 8
+
+    call(['notify-send', '-t', '60000', f'{number:,d}', '\n'.join([
+        num2words(number),
+        f'{number:.2e}',
+        f'0x{number:0{byte_length * 2}x} ({byte_length} byte{bool(byte_length - 1) * "s"})',
+        f'{bin(number)} ({bit_length} bit{bool(bit_length - 1) * "s"})'
+    ])])
+
+def main():
+    notify_number_representations(pyperclip.paste(primary=True), argv[1])
+
+if __name__ == '__main__':
+    main()

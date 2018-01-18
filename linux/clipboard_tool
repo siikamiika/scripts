@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+from sys import argv
+from subprocess import call
+import pyperclip
+
+pyperclip.set_clipboard('xclip')
+
+def clear():
+    pyperclip.copy('')
+    pyperclip.copy('', primary=True)
+
+def primary_to_clipboard():
+    pyperclip.copy(pyperclip.paste(primary=True))
+
+def clipboard_to_primary():
+    pyperclip.copy(pyperclip.paste(), primary=True)
+
+def main():
+    if argv[1] == 'clear':
+        clear()
+    elif argv[1] == 'primary_to_clipboard':
+        primary_to_clipboard()
+    elif argv[1] == 'clipboard_to_primary':
+        clipboard_to_primary()
+
+if __name__ == '__main__':
+    main()

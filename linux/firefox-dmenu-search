@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+
+from subprocess import run, PIPE
+
+def main():
+    query = run(['dmenu'], input=b'', stdout=PIPE).stdout.decode('utf-8').strip()
+    if query:
+        run(['firefox', '--new-window', '--search', query])
+
+if __name__ == '__main__':
+    main()

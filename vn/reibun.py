@@ -25,7 +25,7 @@ def get_file_handle(script_path, random_position):
     return script_handle, script_length
 
 
-def find_example_sentences(path, text, all_examples=False):
+def find_example_sentences(path, text, all_examples=False, interactive=False):
     scripts = glob.glob(path)
     random.shuffle(scripts)
     scripts = [{'path': s, 'start_pos': -1, 'handle': None} for s in scripts]
@@ -33,13 +33,15 @@ def find_example_sentences(path, text, all_examples=False):
     results = []
 
     for script in scripts:
-        print(f'Searching {script["path"]}...', file=sys.stderr)
+        if interactive:
+            print(f'Searching {script["path"]}...', file=sys.stderr)
 
         script_handle, script_length = get_file_handle(script['path'], True)
         script_pos = script_handle.tell()
         script['handle'], script['start_pos'] = script_handle, script_pos
 
-        print(f'    Start at {script_pos} ({script_pos / script_length:.1%})...', file=sys.stderr)
+        if interactive:
+            print(f'    Start at {script_pos} ({script_pos / script_length:.1%})...', file=sys.stderr)
 
         found = False
 
@@ -47,19 +49,22 @@ def find_example_sentences(path, text, all_examples=False):
             line = line.decode('utf-8').strip()
             if text in line:
                 found = True
-                print(f'    Example sentence found: {line}', file=sys.stderr)
+                if interactive:
+                    print(f'    Example sentence found: {line}', file=sys.stderr)
                 source = path_to_source_name(script['path'])
                 results.append((source, line))
                 if not all_examples:
                     return results
 
         if not found:
-            print('    Example sentence not found.', file=sys.stderr)
+            if interactive:
+                print('    Example sentence not found.', file=sys.stderr)
 
     random.shuffle(scripts)
 
     for script in scripts:
-        print(f'Searching {script["path"]} again from the other side...', file=sys.stderr)
+        if interactive:
+            print(f'Searching {script["path"]} again from the other side...', file=sys.stderr)
 
         script['handle'].seek(0)
 
@@ -68,20 +73,23 @@ def find_example_sentences(path, text, all_examples=False):
         for line in script['handle']:
             if script['handle'].tell() > script['start_pos']:
                 if not found:
-                    print('    Example sentence not found.', file=sys.stderr)
+                    if interactive:
+                        print('    Example sentence not found.', file=sys.stderr)
                 break
 
             line = line.decode('utf-8').strip()
             if text in line:
                 found = True
-                print(f'    Example sentence found: {line}', file=sys.stderr)
+                if interactive:
+                    print(f'    Example sentence found: {line}', file=sys.stderr)
                 source = path_to_source_name(script['path'])
                 results.append((source, line))
                 if not all_examples:
                     return results
 
     if len(results) == 0:
-        print(f'No example sentences for 「{text}」.', file=sys.stderr)
+        if interactive:
+            print(f'No example sentences for 「{text}」.', file=sys.stderr)
 
     return results
 
@@ -91,9 +99,9 @@ def main():
     text = sys.argv[2]
 
     if len(sys.argv) > 3 and '--all' in sys.argv[3:]:
-        results = find_example_sentences(path, text, True)
+        results = find_example_sentences(path, text, all_examples=True, interactive=True)
     else:
-        results = find_example_sentences(path, text)
+        results = find_example_sentences(path, text, interactive=True)
 
     print(json.dumps(results, ensure_ascii=False))
 

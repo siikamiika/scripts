@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style type="text/css">
+        body {
+            font-size: 24px;
+        }
+    </style>
+    <title>Reibun</title>
+</head>
+<body>
+    <input id="text-input" type="text" placeholder="find examples">
+    <label><input id="all" type="checkbox">all</label>
+    <button id="search-button">Search</button>
+    <div id="results"></div>
+
+<script type="text/javascript">
+const textInputElement = document.getElementById('text-input');
+const getAllCheckbox = document.getElementById('all');
+const searchButton = document.getElementById('search-button');
+const resultsElement = document.getElementById('results');
+
+searchButton.onclick = search;
+window.onload = function() {
+    let hash = decodeURIComponent(window.location.hash.substr(1));
+    if (hash) {
+        textInputElement.value = hash;
+        search();
+    }
+}
+
+function search() {
+    let textInput = textInputElement.value;
+    let getAll = getAllCheckbox.checked;
+
+    function xhrListener () {
+        showResults(JSON.parse(this.responseText));
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.addEventListener('load', xhrListener);
+    xhr.open('GET', 'http://localhost:9883/search?text=' + encodeURIComponent(textInput) + '&all=' + (getAll ? 'yes' : 'no'));
+    xhr.send();
+}
+
+function showResults(data) {
+    resultsElement.innerHTML = '';
+
+    let resultList = document.createElement('ul');
+    for (const result of data) {
+        let resultItem = document.createElement('li');
+        resultItem.innerHTML = highlightResult(result);
+        resultList.appendChild(resultItem);
+    }
+    resultsElement.appendChild(resultList);
+}
+
+function highlightResult(result) {
+    let textInput = textInputElement.value;
+
+    let output = escapeHTML(result[0]) + ': ';
+    output += escapeHTML(result[1]).replace(escapeHTML(textInput), `<b>${escapeHTML(textInput)}</b>`);
+    return output;
+}
+
+function escapeHTML(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

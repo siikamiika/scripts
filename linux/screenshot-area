@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+from subprocess import call
+import time
+import os
+from os.path import expanduser
+import sys
+import struct
+import pyperclip
+
+pyperclip.set_clipboard('xclip')
+
+with open(expanduser('~/.screenshot-area'), encoding='utf-8') as f:
+    config = f.read().splitlines()
+
+URL_BASE = config[0]
+SCP_REMOTE_PATH = config[1]
+LOCAL_PATH = expanduser('~/Pictures/screenshots/')
+
+def do_screenshot():
+    # bug workaround
+    time.sleep(0.2)
+
+    grab_time = time.strftime('%Y-%m-%d_%H-%M-%S')
+    file_name = f'{grab_time}.png'
+    thumbnail_name = f'{grab_time}-thumb.png'
+    file_path = os.path.join(LOCAL_PATH, file_name)
+    thumbnail_path = os.path.join(LOCAL_PATH, thumbnail_name)
+    file_url = URL_BASE + file_name
+
+    status_code = call(['scrot', '-s', file_path])
+    if status_code != 0:
+        sys.exit(status_code)
+
+    file_handle = open(file_path, 'rb')
+    png_resolution_bytes = file_handle.read(24)[16:24]
+    png_w, png_h = struct.unpack('>ii', png_resolution_bytes)
+
+    notification_image_path = file_path
+    if png_w > 350:
+        call(['convert', file_path, '-resize', '350', thumbnail_path])
+        notification_image_path = thumbnail_path
+
+    call(['scp', file_path, SCP_REMOTE_PATH])
+
+    call(['notify-send', '-i', notification_image_path, ' '])
+    pyperclip.copy(file_url)
+    pyperclip.copy(file_url, primary=True)
+
+    time.sleep(5)
+
+    try:
+        os.remove(thumbnail_path)
+    except FileNotFoundError:
+        pass
+
+def main():
+    do_screenshot()
+
+if __name__ == '__main__':
+    main()

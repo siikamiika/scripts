@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+
+# Concatenate a directory (of images) into .index.html and open it in your browser.
+
+import os
+import html
+from sys import argv
+from pathlib import Path
+from subprocess import call
+
+def main():
+    page = [
+        '<!DOCTYPE html>',
+        '<head>',
+            '<meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            '<style type="text/css">',
+                'body {',
+                    'background-color: black;',
+                    'text-align: center;',
+                '}',
+                'body {',
+                    'color: #237A72;',
+                '}',
+                '#controls {',
+                    'font-size: 48px;',
+                    'text-align: center;',
+                    'width: 50%;',
+                    'position: fixed;',
+                    'bottom: 5px;',
+                    'left: 50%;',
+                    'margin-left: -25%;',
+                    'white-space: nowrap;',
+                '}',
+                '.no-sel {',
+                    '-webkit-touch-callout: none;',
+                    '-webkit-user-select: none;',
+                    '-khtml-user-select: none;',
+                    '-moz-user-select: none;',
+                    '-ms-user-select: none;',
+                    'user-select: none;',
+                '}',
+            '</style>',
+        '</head>',
+        '<body>',
+        '<!-- Content -->',
+    ]
+
+    path = argv[1] if argv[1:] else '.'
+    position = None
+    if os.path.isfile(path):
+        path, position = os.path.split(path)
+
+    script = [
+        '<script>\n',
+        'var files = `',
+    ]
+
+    for f in sorted(os.listdir(path)):
+        if not f.startswith('.'):
+            script.append('{}\n'.format(html.escape(f, quote=True)))
+
+    script += [
+        '`;\n',
+        'files = files.match(/[^\\n]+/g);\n',
+        'var page = document.getElementById("page");\n',
+        'var page_name = document.getElementById("page_name");\n',
+        'var back = document.getElementById("back");\n',
+        'var forward = document.getElementById("forward");\n',
+        '''
+        var loadPage = function() {
+            if (window.location.hash) {
+                pageNumber = parseInt(window.location.hash.substring(1));
+                page.src = files[pageNumber];
+                page_name.innerHTML = files[pageNumber];
+            } else {
+                page.src = files[0];
+                page_name.innerHTML = files[0];
+                window.location.hash = 0;
+            }
+
+        }
+        ''',
+        '''
+        var goBack = function() {
+            pageNumber = parseInt(window.location.hash.substring(1)) - 1;
+            if (pageNumber >= 0) {
+                window.location.hash = pageNumber;
+                page.src = files[pageNumber];
+                page_name.innerHTML = files[pageNumber];
+            }
+        }
+        ''',
+        '''
+        var goForward = function() {
+            pageNumber = parseInt(window.location.hash.substring(1)) + 1;
+            if (pageNumber < files.length) {
+                window.location.hash = pageNumber;
+                page.src = files[pageNumber];
+                page_name.innerHTML = files[pageNumber];
+            }
+        }
+        ''',
+        'back.onclick = goBack;',
+        'forward.onclick = goForward;',
+        '''
+        document.body.onkeydown = function(e) {
+            if (e.key === "ArrowLeft") {
+                goBack();
+            } else if (e.key === "ArrowRight") {
+                goForward();
+            }
+        }
+        ''',
+        'window.onload = loadPage;',
+        'window.onhashchange = loadPage;',
+        '</script>',
+    ]
+
+    page += [
+        '<p id="page_name"></p>',
+        '<img id="page">',
+        '<div id="controls">',
+            '<span class="no-sel" id="back">←</span>',
+            ' ',
+            '<span class="no-sel" id="forward">→</span>',
+        '</div>',
+        ''.join(script),
+        '<!-- End content -->',
+        '</body>',
+    ]
+
+    page = '\n'.join(page)
+
+    index = os.path.join(path, '.index.html')
+
+    with open(index, 'w', encoding='utf-8') as f:
+        f.write(page)
+
+    uri = Path(index).resolve().as_uri()
+    if position:
+        uri += '#' + position
+    call(['firefox', '--new-window', uri])
+
+
+if __name__ == '__main__':
+    main()

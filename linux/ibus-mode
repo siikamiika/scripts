@@ -2,7 +2,17 @@
 
 import ibus
 import dbus
+from subprocess import call, check_output
+from os.path import expanduser
 import sys
+
+def set_layout(layout):
+    call(['setxkbmap', layout])
+    call(['xmodmap', expanduser('~/.Xmodmap')])
+
+def set_engine(engine, layout='autism'):
+    call(['ibus', 'engine', engine])
+    set_layout(layout)
 
 def set_input_mode(mode):
     bus = ibus.Bus()
@@ -11,7 +21,25 @@ def set_input_mode(mode):
     ic.PropertyActivate('InputMode.' + mode, ibus.PROP_STATE_CHECKED)
 
 def main():
-    set_input_mode(sys.argv[1])
+    # Alt+Shift+1: English/Finnish
+    if sys.argv[1] == 'autism':
+        set_engine('mozc-jp')
+        set_input_mode('Direct')
+    # Alt+Shift+2: Japanese
+    elif sys.argv[1] == 'japanese':
+        set_engine('mozc-jp')
+        set_input_mode('Hiragana')
+    # Alt+Shift+3: Russian
+    elif sys.argv[1] == 'russian':
+        set_engine('mozc-jp', 'ru(phonetic)')
+        set_input_mode('Direct')
+    # Super+period: emoji
+    elif sys.argv[1] == 'emoji':
+        current_engine = check_output(['ibus', 'engine']).strip()
+        if current_engine != 'uniemoji':
+            set_engine('uniemoji')
+        else:
+            set_engine('mozc-jp')
 
 if __name__ == '__main__':
     main()

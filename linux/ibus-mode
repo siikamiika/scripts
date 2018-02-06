@@ -1,0 +1,17 @@
+#!/usr/bin/env python2
+
+import ibus
+import dbus
+import sys
+
+def set_input_mode(mode):
+    bus = ibus.Bus()
+    conn = bus.get_dbusconn().get_object(ibus.common.IBUS_SERVICE_IBUS, bus.current_input_contxt())
+    ic = dbus.Interface(conn, dbus_interface=ibus.common.IBUS_IFACE_INPUT_CONTEXT)
+    ic.PropertyActivate('InputMode.' + mode, ibus.PROP_STATE_CHECKED)
+
+def main():
+    set_input_mode(sys.argv[1])
+
+if __name__ == '__main__':
+    main()

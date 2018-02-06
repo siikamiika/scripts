@@ -41,5 +41,7 @@ def main():
         else:
             set_engine('mozc-jp')
 
+    call(['pkill', '-RTMIN+11', 'i3blocks'])
+
 if __name__ == '__main__':
     main()

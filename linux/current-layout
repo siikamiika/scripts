@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+if [ "$(ibus engine)" = "uniemoji" ]; then
+    echo 😂
+else
+    echo $(setxkbmap -query | grep layout | awk '{print substr($2,0,2)}')
+fi

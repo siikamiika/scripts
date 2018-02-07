@@ -1,5 +1,10 @@
 #!/usr/bin/bash
 
+case $BLOCK_BUTTON in
+    1) ibus-setup ;;
+    3) ibus restart ;;
+esac
+
 if [ "$(ibus engine)" = "uniemoji" ]; then
     echo 😂
 else

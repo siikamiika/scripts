@@ -283,6 +283,8 @@ LWin::Key(A_ThisHotkey, 133)
 LWin Up::KeyUp(A_ThisHotkey, 133)
 LAlt::Key(A_ThisHotkey, 64)
 LAlt Up::KeyUp(A_ThisHotkey, 64)
+RAlt::Key(A_ThisHotkey, 108)
+RAlt Up::KeyUp(A_ThisHotkey, 108)
 SC07B::Key(A_ThisHotkey, 102) ; muhenkan
 SC07B Up::KeyUp(A_ThisHotkey, 102)
 SC039::Key(A_ThisHotkey, 65) ; space

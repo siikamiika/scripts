@@ -2343,29 +2343,29 @@ radio {
 scale {
   min-height: 10px;
   min-width: 10px;
-  padding: 1px; }
+  padding: 3px; }
   scale.horizontal trough {
     padding: 0 4px; }
   scale.horizontal highlight, scale.horizontal fill {
     margin: 0 -4px; }
   scale.vertical trough {
-    padding: 2px 0; }
+    padding: 4px 0; }
   scale.vertical highlight, scale.vertical fill {
     margin: -4px 0; }
   scale slider {
-    min-height: 8px;
-    min-width: 8px;
+    min-height: 15px;
+    min-width: 15px;
     margin: -6px; }
   scale.fine-tune slider {
     margin: -4px; }
   scale.fine-tune fill,
   scale.fine-tune highlight,
   scale.fine-tune trough {
-    border-radius: 2px;
-    -gtk-outline-radius: 2px; }
+    border-radius: 5px;
+    -gtk-outline-radius: 7px; }
   scale trough {
     outline-offset: 2px;
-    -gtk-outline-radius: 2.5px;
+    -gtk-outline-radius: 4.5px;
     border-radius: 2.5px;
     background-color: #cfd6e6; }
     scale trough:disabled {

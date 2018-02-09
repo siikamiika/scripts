@@ -1,0 +1,129 @@
+#!/usr/bin/env python2
+
+from subprocess import call
+import sys
+import Xlib
+import Xlib.display
+from threading import Thread
+import json
+from tornado import web, ioloop
+from os.path import expanduser
+
+
+class LayoutChangeHandler(web.RequestHandler):
+
+    def initialize(self, layout_controller, windows, auth):
+        self.layout_controller = layout_controller
+        self.windows = windows
+        self.auth = auth
+
+    def post(self):
+        if not self.request.headers.get('auth') == self.auth:
+            return
+        layout = json.loads(self.request.body.decode('utf-8'))
+        if layout == 'emoji' and self.windows[self.windows['current']] == layout:
+            self.layout_controller.set_layout('autism')
+            self.windows[self.windows['current']] = 'autism'
+        else:
+            self.layout_controller.set_layout(layout)
+            self.windows[self.windows['current']] = layout
+
+
+class XorgFocusChangeListener(object):
+
+    def __init__(self):
+        self.xorg_display = Xlib.display.Display()
+        self.NET_ACTIVE_WINDOW = self.xorg_display.intern_atom('_NET_ACTIVE_WINDOW')
+        self.root = self.xorg_display.screen().root
+        self.last_id = None
+        self.callbacks = []
+        self.thread = Thread(target=self._background)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def add_callback(self, callback):
+        if callback not in self.callbacks:
+            self.callbacks.append(callback)
+            if self.last_id != None:
+                callback(self.last_id)
+
+    def remove_callback(self, callback):
+        if callback in self.callbacks:
+            self.callbacks.remove(callback)
+
+    def _get_active_window(self):
+        window_id = self.root.get_full_property(
+            self.NET_ACTIVE_WINDOW,
+            Xlib.X.AnyPropertyType
+            ).value[0]
+        focus_changed = window_id != self.last_id
+        self.last_id = window_id
+
+        return window_id, focus_changed
+
+    def _background(self):
+        self.root.change_attributes(event_mask=Xlib.X.PropertyChangeMask)
+        while True:
+            window_id, changed = self._get_active_window()
+            if changed:
+                for callback in self.callbacks:
+                    callback(window_id)
+
+            while True:
+                event = self.xorg_display.next_event()
+                if (event.type == Xlib.X.PropertyNotify and
+                    event.atom == self.NET_ACTIVE_WINDOW):
+                    break
+
+
+class LayoutHandler(object):
+
+    def __init__(self, default_layout):
+        self.default_layout = default_layout
+        self.windows = dict(windows=dict(), current=None)
+        self.layout_controller = LayoutController()
+        self.layout_controller.set_layout(default_layout)
+        self.focus_listener = XorgFocusChangeListener()
+        self.focus_listener.add_callback(self._handle_window_focus_change)
+        with open(expanduser('~/.layout-server')) as f:
+            self.auth = f.read().strip()
+        self.layout_server = web.Application([
+            (r'/layout', LayoutChangeHandler,
+                {'layout_controller': self.layout_controller, 'windows': self.windows, 'auth': self.auth}),
+        ])
+
+    def run(self):
+        self.layout_server.listen(9884, address='127.0.0.1')
+        main_loop = ioloop.IOLoop.instance()
+        main_loop.start()
+
+    def _handle_window_focus_change(self, window_id):
+        self.windows['current'] = window_id
+        current_layout = self.layout_controller.get_current_layout()
+        if not self.windows.get(window_id):
+            if current_layout != self.default_layout:
+                self.layout_controller.set_layout(self.default_layout)
+            self.windows[window_id] = self.default_layout
+        elif self.windows[window_id] != current_layout:
+            self.layout_controller.set_layout(self.windows[window_id])
+
+
+class LayoutController(object):
+
+    def __init__(self):
+        self.current_layout = None
+
+    def set_layout(self, layout):
+        call(['ibus-mode', layout])
+        self.current_layout = layout
+
+    def get_current_layout(self):
+        return self.current_layout
+
+
+def main():
+    layout_handler = LayoutHandler(sys.argv[1])
+    layout_handler.run()
+
+if __name__ == '__main__':
+    main()

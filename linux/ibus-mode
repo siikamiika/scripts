@@ -1,46 +1,100 @@
 #!/usr/bin/env python2
 
+from __future__ import print_function
 import ibus
 import dbus
 from subprocess import call, check_output
 from os.path import expanduser
 import sys
 
-def set_layout(layout):
-    call(['setxkbmap', layout])
-    call(['xmodmap', expanduser('~/.Xmodmap')])
+DEBUG = False
 
-def set_engine(engine, layout='autism'):
-    call(['ibus', 'engine', engine])
-    set_layout(layout)
 
-def set_input_mode(mode):
-    bus = ibus.Bus()
-    conn = bus.get_dbusconn().get_object(ibus.common.IBUS_SERVICE_IBUS, bus.current_input_contxt())
-    ic = dbus.Interface(conn, dbus_interface=ibus.common.IBUS_IFACE_INPUT_CONTEXT)
-    ic.PropertyActivate('InputMode.' + mode, ibus.PROP_STATE_CHECKED)
+def debug_print(message):
+    if DEBUG:
+        print(message, file=sys.stderr)
+
+
+class IBusController(object):
+
+    def __init__(self):
+        self.bus = ibus.Bus()
+        self.ibus_connection = self.bus.get_dbusconn().get_object(
+            ibus.common.IBUS_SERVICE_IBUS, self.bus.current_input_contxt())
+        self.ibus_interface = dbus.Interface(
+           self.ibus_connection, dbus_interface=ibus.common.IBUS_IFACE_INPUT_CONTEXT)
+
+    def get_engine(self):
+        return str(self.ibus_interface.GetEngine()[2])
+
+    def set_engine(self, engine_name):
+        if self.get_engine() != engine_name:
+            debug_print('Setting IBus engine to "{}"'.format(engine_name))
+            self.ibus_interface.SetEngine(engine_name)
+
+    def set_input_mode(self, mode):
+        debug_print('Activating IBus property InputMode.{}'.format(mode))
+        self.ibus_interface.PropertyActivate(
+            'InputMode.' + mode, ibus.PROP_STATE_CHECKED)
+
+
+class LayoutController(object):
+
+    def __init__(self):
+        self.current_layout = None
+        self.ibus_controller = IBusController()
+
+    def set_layout(self, layout):
+        method = getattr(self, '_layout_' + layout)
+        debug_print('Setting layout to "{}"'.format(layout))
+        method()
+
+    def _get_current_xkb_layout(self):
+        for line in check_output(['setxkbmap', '-query']).splitlines():
+            if line.startswith('layout:'):
+                debug_print('Current xkb {}'.format(line))
+                return line.split()[1]
+
+    def _set_xkb_layout(self, layout):
+        self.current_layout = self._get_current_xkb_layout()
+        if self.current_layout != layout:
+            debug_print('Setting xkb layout to "{}" and reloading xmodmap'.format(layout))
+            call(['setxkbmap', layout])
+            call(['xmodmap', expanduser('~/.Xmodmap')])
+        else:
+            debug_print('xkb layout is already "{}", not touching it'.format(layout))
+
+    # Alt+Shift+1: English/Finnish
+    def _layout_autism(self):
+        self.ibus_controller.set_engine('mozc-jp')
+        self.ibus_controller.set_input_mode('Direct')
+        self._set_xkb_layout('autism')
+
+    # Alt+Shift+2: Japanese
+    def _layout_japanese(self):
+        self.ibus_controller.set_engine('mozc-jp')
+        self.ibus_controller.set_input_mode('Hiragana')
+        self._set_xkb_layout('autism')
+
+    # Alt+Shift+3: Russian
+    def _layout_russian(self):
+        self.ibus_controller.set_engine('mozc-jp')
+        self.ibus_controller.set_input_mode('Direct')
+        self._set_xkb_layout('ru(phonetic)')
+
+    # Super+period: emoji
+    def _layout_emoji(self):
+        self.ibus_controller.set_engine('uniemoji')
+        self._set_xkb_layout('autism')
+
 
 def main():
-    # Alt+Shift+1: English/Finnish
-    if sys.argv[1] == 'autism':
-        set_engine('mozc-jp')
-        set_input_mode('Direct')
-    # Alt+Shift+2: Japanese
-    elif sys.argv[1] == 'japanese':
-        set_engine('mozc-jp')
-        set_input_mode('Hiragana')
-    # Alt+Shift+3: Russian
-    elif sys.argv[1] == 'russian':
-        set_engine('mozc-jp', 'ru(phonetic)')
-        set_input_mode('Direct')
-    # Super+period: emoji
-    elif sys.argv[1] == 'emoji':
-        current_engine = check_output(['ibus', 'engine']).strip()
-        if current_engine != 'uniemoji':
-            set_engine('uniemoji')
-        else:
-            set_engine('mozc-jp')
+    global DEBUG
+    if len(sys.argv) > 2 and sys.argv[2] == 'debug':
+        DEBUG = True
 
+    layout_controller = LayoutController()
+    layout_controller.set_layout(sys.argv[1])
     call(['pkill', '-RTMIN+11', 'i3blocks'])
 
 if __name__ == '__main__':

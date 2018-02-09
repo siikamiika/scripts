@@ -8,6 +8,7 @@ from threading import Thread
 import json
 from tornado import web, ioloop
 from os.path import expanduser
+import time
 
 
 class LayoutChangeHandler(web.RequestHandler):
@@ -21,11 +22,12 @@ class LayoutChangeHandler(web.RequestHandler):
         if not self.request.headers.get('auth') == self.auth:
             return
         layout = json.loads(self.request.body.decode('utf-8'))
-        if layout == 'emoji' and self.windows[self.windows['current']] == layout:
-            self.layout_controller.set_layout('autism')
+        window_id = self.windows['current']
+        if layout == 'emoji' and self.windows[window_id] == layout:
+            self.layout_controller.set_layout('autism', window_id, self.windows)
             self.windows[self.windows['current']] = 'autism'
         else:
-            self.layout_controller.set_layout(layout)
+            self.layout_controller.set_layout(layout, window_id, self.windows)
             self.windows[self.windows['current']] = layout
 
 
@@ -82,7 +84,7 @@ class LayoutHandler(object):
         self.default_layout = default_layout
         self.windows = dict(windows=dict(), current=None)
         self.layout_controller = LayoutController()
-        self.layout_controller.set_layout(default_layout)
+        self.layout_controller.set_layout(default_layout, None, self.windows)
         self.focus_listener = XorgFocusChangeListener()
         self.focus_listener.add_callback(self._handle_window_focus_change)
         with open(expanduser('~/.layout-server')) as f:
@@ -102,20 +104,30 @@ class LayoutHandler(object):
         current_layout = self.layout_controller.get_current_layout()
         if not self.windows.get(window_id):
             if current_layout != self.default_layout:
-                self.layout_controller.set_layout(self.default_layout)
+                self.layout_controller.set_layout(self.default_layout, window_id, self.windows)
             self.windows[window_id] = self.default_layout
         elif self.windows[window_id] != current_layout:
-            self.layout_controller.set_layout(self.windows[window_id])
+            self.layout_controller.set_layout(self.windows[window_id], window_id, self.windows)
 
 
 class LayoutController(object):
 
     def __init__(self):
         self.current_layout = None
+        self.locked = False
 
-    def set_layout(self, layout):
-        call(['ibus-mode', layout])
-        self.current_layout = layout
+    def set_layout(self, layout, window_id, windows):
+        if self.locked:
+            return
+        self.locked = True
+
+        def bg():
+            time.sleep(0.1)
+            if window_id == windows['current']:
+                call(['ibus-mode', layout])
+                self.current_layout = layout
+            self.locked = False
+        Thread(target=bg).start()
 
     def get_current_layout(self):
         return self.current_layout

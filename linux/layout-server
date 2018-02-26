@@ -4,7 +4,7 @@ from subprocess import call
 import sys
 import Xlib
 import Xlib.display
-from threading import Thread
+from threading import Thread, Timer
 import json
 from tornado import web, ioloop
 from os.path import expanduser
@@ -114,20 +114,21 @@ class LayoutController(object):
 
     def __init__(self):
         self.current_layout = None
-        self.locked = False
+        self.timer = None
 
     def set_layout(self, layout, window_id, windows):
-        if self.locked:
-            return
-        self.locked = True
+        try:
+            self.timer.cancel()
+        except AttributeError:
+            pass
 
         def bg():
-            time.sleep(0.1)
             if window_id == windows['current']:
                 call(['ibus-mode', layout])
                 self.current_layout = layout
-            self.locked = False
-        Thread(target=bg).start()
+
+        self.timer = Timer(0.2, bg)
+        self.timer.start()
 
     def get_current_layout(self):
         return self.current_layout

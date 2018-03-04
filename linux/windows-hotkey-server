@@ -5,6 +5,8 @@ from io import StringIO
 import pyperclip
 import uinput
 
+pyperclip.set_clipboard('xclip')
+
 def unescape_newlines_and_spaces(text):
     result = StringIO()
     text_iter = iter(text)

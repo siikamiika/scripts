@@ -128,6 +128,7 @@ SC03B::
     Key(A_ThisHotkey, 67)
     KeyUp(A_ThisHotkey, 67)
     PrintLn("quit")
+    Run, release_modifiers.ahk
     ExitApp
 
 AppsKey::

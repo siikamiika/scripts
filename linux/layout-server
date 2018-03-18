@@ -27,7 +27,7 @@ class LayoutChangeHandler(web.RequestHandler):
             self.layout_controller.set_layout('autism', window_id, self.windows)
             self.windows[self.windows['current']] = 'autism'
         else:
-            self.layout_controller.set_layout(layout, window_id, self.windows)
+            self.layout_controller.set_layout(layout, window_id, self.windows, instant=True)
             self.windows[self.windows['current']] = layout
 
 
@@ -116,7 +116,7 @@ class LayoutController(object):
         self.current_layout = None
         self.timer = None
 
-    def set_layout(self, layout, window_id, windows):
+    def set_layout(self, layout, window_id, windows, instant=False):
         try:
             self.timer.cancel()
         except AttributeError:
@@ -127,7 +127,7 @@ class LayoutController(object):
                 call(['ibus-mode', layout])
                 self.current_layout = layout
 
-        self.timer = Timer(0.2, bg)
+        self.timer = Timer(0.2 if not instant else 0, bg)
         self.timer.start()
 
     def get_current_layout(self):

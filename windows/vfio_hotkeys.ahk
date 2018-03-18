@@ -50,8 +50,7 @@ SC001::
     If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
         Send, {Blind}{F2}
         Return
-    }
-    if (A_TickCount - RemoteKeyboardLaunchTime > 500) {
+    } Else If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
         RemoteKeyboardLaunchTime := A_TickCount
         Run, remotekeyboard.bat,, Hide
     }

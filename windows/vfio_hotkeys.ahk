@@ -7,6 +7,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 IniRead, VfioCredentials, conf.ini, Vfio, Credentials
 ; global AudioPID := -1
 global FunctionKeysOn := False
+global RemoteKeyboardLaunchTime := -1
 
 ; init
 PrintLn(VfioCredentials)
@@ -50,7 +51,10 @@ SC001::
         Send, {Blind}{F2}
         Return
     }
-    Run, remotekeyboard.bat,, Hide
+    if (A_TickCount - RemoteKeyboardLaunchTime > 500) {
+        RemoteKeyboardLaunchTime := A_TickCount
+        Run, remotekeyboard.bat,, Hide
+    }
     Return
 
 ; toggle audio

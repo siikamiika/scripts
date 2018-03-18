@@ -5,6 +5,7 @@ SetWorkingDir %A_ScriptDir%  ; Ensures a consistent starting directory.
 #Persistent
 #MaxHotkeysPerInterval 999
 #Include, AHKHID.ahk
+#SingleInstance, ignore
 
 ; constants
 ;__________

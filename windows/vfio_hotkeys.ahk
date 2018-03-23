@@ -56,6 +56,14 @@ SC001::
     }
     Return
 
+
+*SC04F::
+    If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
+        RemoteKeyboardLaunchTime := A_TickCount
+        Run, remotekeyboard.bat,, Hide
+    }
+    Return
+
 ; toggle audio
 ; F3::
 ;     If (AudioPID != -1) {

@@ -125,6 +125,7 @@ KeyUp(AHKCode, Code) {
 
 ; key bindings
 ;_____________
+SC04F::
 SC03B::
     Key(A_ThisHotkey, 67)
     KeyUp(A_ThisHotkey, 67)

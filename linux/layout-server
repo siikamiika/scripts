@@ -23,9 +23,13 @@ class LayoutChangeHandler(web.RequestHandler):
             return
         layout = json.loads(self.request.body.decode('utf-8'))
         window_id = self.windows['current']
-        if layout == 'emoji' and self.windows[window_id] == layout:
-            self.layout_controller.set_layout('autism', window_id, self.windows)
-            self.windows[self.windows['current']] = 'autism'
+        if layout == 'emoji':
+            if self.windows[window_id] == layout:
+                self.layout_controller.set_layout('autism', window_id, self.windows)
+                self.windows[self.windows['current']] = 'autism'
+            else:
+                self.layout_controller.set_layout('emoji', window_id, self.windows)
+                self.windows[self.windows['current']] = 'emoji'
         else:
             self.layout_controller.set_layout(layout, window_id, self.windows, instant=True)
             self.windows[self.windows['current']] = layout

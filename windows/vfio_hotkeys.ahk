@@ -56,7 +56,7 @@ SC001::
     }
     Return
 
-
+*Pause::
 *SC04F::
     If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
         RemoteKeyboardLaunchTime := A_TickCount
@@ -79,9 +79,11 @@ SC001::
 ;     Return
 
 ; change main monitor from windows to linux
+*F3::
 *F4::
     If (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P") or FunctionKeysOn) {
-        Send, {Blind}{F4}
+        FunctionKey := SubStr(A_ThisHotkey, 2)
+        Send, {Blind}{%FunctionKey%}
         Return
     }
     Run, nircmdc monitor off,, Hide ; monitor will look for another input

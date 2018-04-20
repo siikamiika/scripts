@@ -127,8 +127,16 @@ KeyUp(AHKCode, Code) {
 ;_____________
 SC04F::
 SC03B::
+*Pause::
     Key(A_ThisHotkey, 67)
     KeyUp(A_ThisHotkey, 67)
+    PrintLn("quit")
+    Run, release_modifiers.ahk
+    ExitApp
+
+~SC03D::
+    Key(A_ThisHotkey, 69)
+    KeyUp(A_ThisHotkey, 69)
     PrintLn("quit")
     Run, release_modifiers.ahk
     ExitApp
@@ -143,8 +151,8 @@ AppsKey::
 ;SC03B Up::KeyUp(A_ThisHotkey, 67)
 SC03C::Key(A_ThisHotkey, 68)
 SC03C Up::KeyUp(A_ThisHotkey, 68)
-SC03D::Key(A_ThisHotkey, 69)
-SC03D Up::KeyUp(A_ThisHotkey, 69)
+; SC03D::Key(A_ThisHotkey, 69)
+; SC03D Up::KeyUp(A_ThisHotkey, 69)
 ~SC03E::Key(A_ThisHotkey, 70)
 ~SC03E Up::KeyUp(A_ThisHotkey, 70)
 SC03F::Key(A_ThisHotkey, 71)
@@ -302,8 +310,8 @@ PrintScreen::Key(A_ThisHotkey, 107)
 PrintScreen Up::KeyUp(A_ThisHotkey, 107)
 ScrollLock::Key(A_ThisHotkey, 78)
 ScrollLock Up::KeyUp(A_ThisHotkey, 78)
-Pause::Key(A_ThisHotkey, 127)
-Pause Up::KeyUp(A_ThisHotkey, 127)
+; Pause::Key(A_ThisHotkey, 127)
+; Pause Up::KeyUp(A_ThisHotkey, 127)
 ;;;
 Insert::Key(A_ThisHotkey, 118)
 Insert Up::KeyUp(A_ThisHotkey, 118)

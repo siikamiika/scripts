@@ -28,7 +28,10 @@ class MacroPad(object):
                 if event.value == 1:
                     self.keys_down.add(event.code)
                 elif event.value == 0:
-                    self.keys_down.remove(event.code)
+                    try:
+                        self.keys_down.remove(event.code)
+                    except KeyError:
+                        pass
                 # run macro
                 if event.code in self.handlers:
                     self._run_macro(self.handlers[event.code], event.value)

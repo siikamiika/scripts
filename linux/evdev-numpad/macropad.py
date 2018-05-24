@@ -20,6 +20,11 @@ class MacroPad(object):
         self.keys_down = set()
         self.handlers = dict()
 
+    def add_handler(self, key, handler):
+        if key not in self.handlers:
+            self.handlers[key] = []
+        self.handlers[key].append(handler)
+
     def start_loop(self):
         self.device = InputDevice(self.device_path)
         for event in self.device.read_loop():
@@ -34,29 +39,46 @@ class MacroPad(object):
                         pass
                 # run macro
                 if event.code in self.handlers:
-                    self._run_macro(self.handlers[event.code], event.value)
+                    self._run_macros(event.code, event.value)
 
-    def _run_macro(self, macro, key_state):
-        modifiers = set()
-        listeners = [None, None, None]
+    def _run_macros(self, key_code, key_state):
+        handlers = self.handlers[key_code]
+        active_modifiers = set()
+        for handler in handlers:
+            if isinstance(handler, dict) and 'modifiers' in handler:
+                active_modifiers |= handler['modifiers']
 
-        if isinstance(macro, dict):
-            if 'modifiers' in macro:
-                modifiers |= set(macro['modifiers'])
-            if 'listeners' in macro:
-                if isinstance(macro['listeners'], str):
-                    listeners[1] = macro['listeners']
-                else:
-                    listeners = macro['listeners']
-        elif isinstance(macro, str):
-            listeners[1] = macro
-        else:
-            listeners = macro
+        for macro in handlers:
+            modifiers = set()
+            listeners = [None, None, None]
 
+            if isinstance(macro, dict):
+                if 'modifiers' in macro:
+                    modifiers |= set(macro['modifiers'])
+                if 'listeners' in macro:
+                    if isinstance(macro['listeners'], str):
+                        listeners[1] = macro['listeners']
+                    else:
+                        listeners = macro['listeners']
+            elif isinstance(macro, str):
+                listeners[1] = macro
+            else:
+                listeners = macro
 
-        # listener exists for key_state and every modifier is in self.keys_down
-        if listeners[key_state] and modifiers <= self.keys_down:
-            Popen(listeners[key_state], shell=True, stdout=DEVNULL, stderr=DEVNULL)
+            # key is held, add key to modifiers
+            if key_state > 0:
+                modifiers |= {key_code}
+            # default
+            modifier_match = True
+            # active modifiers for key are held, use exact match
+            if self.keys_down & active_modifiers:
+                modifier_match = modifiers == self.keys_down
+            # use loose match
+            elif active_modifiers:
+                modifier_match = modifiers <= self.keys_down
+
+            if listeners[key_state] and modifier_match:
+                Popen(listeners[key_state], shell=True, stdout=DEVNULL, stderr=DEVNULL)
 
 def main():
     macro_pad = MacroPad(DEVICE)
@@ -67,21 +89,23 @@ def main():
     # configuration
 
     # numpad 1 press when numpad 0 is held
-    macro_pad.handlers[KEY_KP1] = dict(
+    macro_pad.add_handler(KEY_KP1, dict(
         modifiers={KEY_KP0},
-        listeners='aplay /dev/urandom & sleep 2; killall aplay' # press only
-    )
+        listeners='ffmpeg -f lavfi -i "sine=frequency=500:duration=0.5" -f wav - | mpv -' # press only
+    ))
     # numpad 2 release/press/hold when numpad 0 is held
-    macro_pad.handlers[KEY_KP2] = dict(
+    macro_pad.add_handler(KEY_KP2, dict(
         modifiers={KEY_KP0},
         listeners=(
             'ffmpeg -f lavfi -i "sine=frequency=500:duration=0.1" -f wav - | mpv -',  # release
             'ffmpeg -f lavfi -i "sine=frequency=1000:duration=0.1" -f wav - | mpv -', # press
             'ffmpeg -f lavfi -i "sine=frequency=2000:duration=0.1" -f wav - | mpv -'  # hold (repeat)
         )
-    )
+    ))
+    # numpad 1 press only
+    macro_pad.add_handler(KEY_KP1, 'ffmpeg -f lavfi -i "sine=frequency=1000:duration=0.5" -f wav - | mpv -')
     # numpad 3 press only
-    macro_pad.handlers[KEY_KP3] = 'aplay /dev/urandom & sleep 2; killall aplay'
+    macro_pad.add_handler(KEY_KP3, 'ffmpeg -f lavfi -i "sine=frequency=1000:duration=0.5" -f wav - | mpv -')
 
     # start
     macro_pad.start_loop()

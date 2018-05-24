@@ -46,7 +46,7 @@ class MacroPad(object):
         active_modifiers = set()
         for handler in handlers:
             if isinstance(handler, dict) and 'modifiers' in handler:
-                active_modifiers |= handler['modifiers']
+                active_modifiers |= set(handler['modifiers'])
 
         for macro in handlers:
             modifiers = set()

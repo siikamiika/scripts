@@ -30,39 +30,39 @@ CloseConnection() {
 }
 
 ; hotkeys
-SC001::
-    FunctionKeysOn := !FunctionKeysOn
-    If (FunctionKeysOn) {
-        SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
-    } Else {
-        SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
-    }
-    Return
+; SC001::
+;     FunctionKeysOn := !FunctionKeysOn
+;     If (FunctionKeysOn) {
+;         SoundPlay, %A_WinDir%\Media\Windows Hardware Remove.wav
+;     } Else {
+;         SoundPlay, %A_WinDir%\Media\Windows Hardware Insert.wav
+;     }
+;     Return
 
-*F1::
-    If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
-        Send, {Blind}{F1}
-        Return
-    }
-    Return
-
-*F2::
-    If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
-        Send, {Blind}{F2}
-        Return
-    } Else If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
-        RemoteKeyboardLaunchTime := A_TickCount
-        Run, remotekeyboard.bat,, Hide
-    }
-    Return
-
-*Pause::
 *SC04F::
-    If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
-        RemoteKeyboardLaunchTime := A_TickCount
-        Run, remotekeyboard.bat,, Hide
-    }
+    ; If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
+    ;     Send, {Blind}{F1}
+    ;     Return
+    ; }
     Return
+
+*SC050::
+    ; If (GetKeyState("SC07B", "P") or FunctionKeysOn) {
+    ;     Send, {Blind}{F2}
+    ;     Return
+    ; } Else If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
+    ;     RemoteKeyboardLaunchTime := A_TickCount
+    ;     Run, remotekeyboard.bat,, Hide
+    ; }
+    Return
+
+; *Pause::
+; *SC04F::
+;     If (A_TickCount - RemoteKeyboardLaunchTime > 500) {
+;         RemoteKeyboardLaunchTime := A_TickCount
+;         Run, remotekeyboard.bat,, Hide
+;     }
+;     Return
 
 ; toggle audio
 ; F3::
@@ -79,24 +79,25 @@ SC001::
 ;     Return
 
 ; change main monitor from windows to linux
-*F3::
-*F4::
-    If (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P") or FunctionKeysOn) {
-        FunctionKey := SubStr(A_ThisHotkey, 2)
-        Send, {Blind}{%FunctionKey%}
-        Return
-    }
+; *F3::
+; *F4::
+*SC04B::
+    ; If (GetKeyState("SC07B", "P") or GetKeyState("LAlt", "P") or FunctionKeysOn) {
+    ;     FunctionKey := SubStr(A_ThisHotkey, 2)
+    ;     Send, {Blind}{%FunctionKey%}
+    ;     Return
+    ; }
     Run, nircmdc monitor off,, Hide ; monitor will look for another input
     Sleep 1000
     Run, taskkill /im nircmdc.exe /f,, Hide
     Return
 
 ; mhk
-*~SC07B::
-    PrintLn("keydown 102")
-    KeyWait, SC07B
-    PrintLn("keyup 102")
-    Return
+; *~SC07B::
+;     PrintLn("keydown 102")
+;     KeyWait, SC07B
+;     PrintLn("keyup 102")
+;     Return
 
 ; GoldenDict
 *!~LButton::

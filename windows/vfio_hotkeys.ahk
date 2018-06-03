@@ -130,7 +130,8 @@ CloseConnection() {
     Return
 
 AppsKey::
-    Run, python paste.py clipboard,, Hide
+    String := EscapeText(Clipboard)
+    PrintLn("clipboard_copy " String)
     Return
 
 +AppsKey::

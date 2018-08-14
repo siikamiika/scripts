@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 
-from subprocess import call
+from subprocess import Popen, PIPE, call
 import time
 import os
 from os.path import expanduser
 import sys
 import struct
+
 import pyperclip
+import requests
 
 pyperclip.set_clipboard('xclip')
 
 with open(expanduser('~/.screenshot-area'), encoding='utf-8') as f:
     config = f.read().splitlines()
 
-URL_BASE = config[0]
-SCP_REMOTE_PATH = config[1]
+UPLOAD_FORM = config[0]
 LOCAL_PATH = expanduser('~/Pictures/screenshots/')
 
 def do_screenshot():
@@ -26,11 +27,14 @@ def do_screenshot():
     thumbnail_name = f'{grab_time}-thumb.png'
     file_path = os.path.join(LOCAL_PATH, file_name)
     thumbnail_path = os.path.join(LOCAL_PATH, thumbnail_name)
-    file_url = URL_BASE + file_name
 
-    status_code = call(['scrot', '-s', file_path])
-    if status_code != 0:
-        sys.exit(status_code)
+    slop = Popen(['slop'], stdout=PIPE)
+    area, _ = slop.communicate()
+    if slop.returncode != 0:
+        sys.exit(slop.returncode)
+    area = area.decode('utf-8').strip()
+
+    call(['import', '-window', 'root', '-crop', area, file_path])
 
     file_handle = open(file_path, 'rb')
     png_resolution_bytes = file_handle.read(24)[16:24]
@@ -41,7 +45,10 @@ def do_screenshot():
         call(['convert', file_path, '-resize', '350', thumbnail_path])
         notification_image_path = thumbnail_path
 
-    call(['scp', file_path, SCP_REMOTE_PATH])
+    file_handle.seek(0)
+    post_response = requests.post(UPLOAD_FORM, files={'file': file_handle}, allow_redirects=False)
+    file_handle.close()
+    file_url = post_response.headers['location']
 
     call(['notify-send', '-i', notification_image_path, ' '])
     pyperclip.copy(file_url)

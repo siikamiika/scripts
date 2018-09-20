@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+source ~/.local/share/virtualenvs/user/bin/activate
+python3 "$@"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/local/bin/py
 
 import pyperclip
 from tornado import websocket, web, ioloop
@@ -10,12 +10,22 @@ import time
 from os.path import splitext, isfile
 from queue import Queue
 
+try:
+    from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+    import asyncio
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+except:
+    pass
+
 
 class Subtitles(object):
 
     def __init__(self, path):
 
-        self.raw = Path(path).open(encoding='utf-8').read()
+        try:
+            self.raw = Path(path).open(encoding='utf-8').read()
+        except:
+            self.raw = Path(path).open(encoding='gbk').read()
         if self.raw[0] == '\ufeff':
             self.raw = self.raw[1:]
         self.captions = []
@@ -191,7 +201,7 @@ def main():
         print('no subtitles found')
         return
 
-    mp = MpvProcess()
+    mp = MpvProcess(args=['--script=~/.mpv/scripts/manual/focusplay.lua'])
 
     mp.commandv('loadfile', video)
 

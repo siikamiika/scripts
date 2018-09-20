@@ -1,2 +1,2 @@
 #!/usr/bin/bash
-pipenv run python3 $1
+pipenv run python3 "$@"

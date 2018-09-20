@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+pipenv run python2 $1

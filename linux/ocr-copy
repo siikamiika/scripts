@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import time
+from subprocess import Popen, PIPE, call
+
+import pyocr
+from PIL import Image
+import cv2
+import pyperclip
+
+pyperclip.set_clipboard('xclip')
+
+def main():
+    time.sleep(0.2)
+
+    lang = sys.argv[1]
+    mode = sys.argv[2]
+
+    slop = Popen(['slop'], stdout=PIPE)
+    area, _ = slop.communicate()
+    if slop.returncode != 0:
+        sys.exit(slop.returncode)
+    area = area.decode('utf-8').strip()
+
+    call(['import', '-window', 'root', '-crop', area, '/tmp/ocr.png'])
+
+    img = cv2.imread('/tmp/ocr.png')
+    if mode == 'wb':
+        filtered = cv2.inRange(img, (180, 180, 180), (255, 255, 255))
+    elif mode == 'bw':
+        filtered = cv2.inRange(img, (0, 0, 0), (55, 55, 55))
+    # cv2.imwrite('img.jpg', filtered)
+
+    tool = pyocr.get_available_tools()[0]
+    text = tool.image_to_string(Image.fromarray(filtered), lang=lang)
+
+    call(['notify-send', text])
+
+    pyperclip.copy(text)
+    pyperclip.copy(text, primary=True)
+
+
+if __name__ == '__main__':
+    main()

@@ -20,23 +20,23 @@ def read_credentials():
 
     return credentials
 
-def switch(auth):
+def switch(auth, mouse_y):
     sock = socket.socket()
     sock.connect(('es.lan', 9898))
     sock.send(auth + b'\n')
-    sock.send(b'linux\n')
+    sock.send(f'linux {mouse_y}\n'.encode('utf-8'))
 
 def main():
     auth = read_credentials().encode('utf-8')
-    should_switch = True
+    # last differing position
+    last_pos = (0, 0)
     while True:
-        mouse_x, mouse_y = get_mouse_pos()
-        if mouse_x >= 1919:
-            if should_switch:
-                switch(auth)
-            should_switch = False
-        else:
-            should_switch = True
+        current_pos = get_mouse_pos()
+        # switch if we are at the edge and the mouse has moved
+        if current_pos != last_pos:
+            if current_pos[0] >= 1919:
+                switch(auth, current_pos[1])
+            last_pos = current_pos
         time.sleep(0.05)
 
 if __name__ == '__main__':

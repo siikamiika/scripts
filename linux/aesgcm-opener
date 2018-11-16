@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+# current directory
+DIR=$(dirname $(readlink -f "$0"))
+
+# parse file extension
+noanchor=$(awk -F"#" '{$0=$1}1' <<< "$1")
+ext="${noanchor##*.}"
+
+# download and decrypt
+java -jar \
+    "$DIR/ImageDownloader-0.1.jar" \
+    "https$(cut -c7- <<< "$1")" \
+    > "/tmp/aesgcm.$ext"
+
+# open in browser
+firefox -new-window "/tmp/aesgcm.$ext"

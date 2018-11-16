@@ -7,11 +7,18 @@ DIR=$(dirname $(readlink -f "$0"))
 noanchor=$(awk -F"#" '{$0=$1}1' <<< "$1")
 ext="${noanchor##*.}"
 
-# download and decrypt
+# download and decrypt in background
+DL="/tmp/aesgcm.$ext"
+> "$DL"
+exec 3<> "$DL"
 java -jar \
     "$DIR/ImageDownloader-0.1.jar" \
     "https$(cut -c7- <<< "$1")" \
-    > "/tmp/aesgcm.$ext"
+    >> "$DL" &
+
+# wait for some data
+read -n 1 -u 3
+sleep 0.5
 
 # open in browser
-firefox -new-window "/tmp/aesgcm.$ext"
+firefox -new-window "$DL"

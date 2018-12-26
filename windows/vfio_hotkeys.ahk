@@ -137,3 +137,11 @@ AppsKey::
 +AppsKey::
     Run, python paste.py primary,, Hide
     Return
+
+; push to talk
+Numpad6::
+    PrintLn("keydown 102")
+    Return
+Numpad6 Up::
+    PrintLn("keyup 102")
+    Return

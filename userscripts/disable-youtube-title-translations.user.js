@@ -14,11 +14,16 @@ let querySelector = document.querySelector.bind(document);
 let originalTitle,
     titleElement;
 
-// poll original title from page title each second
-let intervalId = setInterval(function() {
-    originalTitle = document.title.slice(0, -10);
+// observe changes to page title, updating the video title accordingly
+let title = querySelector('title');
+new MutationObserver(function(mutations) {
+    console.log(mutations[0].target.text);
+    // strip ` - Youtube`
+    originalTitle = mutations[0].target.text.slice(0, -10);
+    //  set video title to page title
     titleElement = querySelector('#container .title');
-    if (titleElement && originalTitle) {
-        titleElement.innerText = originalTitle;
-    }
-}, 1000);
+    titleElement.innerText = originalTitle;
+}).observe(
+    title,
+    {childList: true}
+);

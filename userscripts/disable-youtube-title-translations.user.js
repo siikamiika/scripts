@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name         disable-youtube-title-translations
-// @namespace    http://miika.es/
 // @version      0.1
 // @description  disable youtube title translations
 // @author       siikamiika
-// @match        http*://www.youtube.com/*
+// @match        https://www.youtube.com/*
 // @grant        none
 // ==/UserScript==
 

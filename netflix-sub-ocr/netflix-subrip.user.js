@@ -28,7 +28,6 @@ window.setTimeout(() => {
     new MutationObserver(function(mutations) {
         let img = mutations[0].target.firstChild;
         toDataURL(img.href.baseVal, function(dataUrl) {
-            console.log(dataUrl);
             let img = document.createElement('img');
             img.src = 'http://localhost:9873/fake_image?image_data='+encodeURIComponent(dataUrl);
         });

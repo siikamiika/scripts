@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import time
 import io
+import functools
 from base64 import b64decode
 from subprocess import call
 
@@ -13,6 +13,7 @@ LANG = "chi_sim"
 
 clients = []
 
+@functools.lru_cache(maxsize=100)
 def do_ocr(image_bytes):
     lines = []
 
@@ -35,10 +36,8 @@ def do_ocr(image_bytes):
 
     lines = ["".join(l.split()) for l in lines]
 
-    text = "\n".join(lines)
+    return "\n".join(lines)
 
-    for client in clients:
-        client.write_message(text)
 
 
 class WsHandler(websocket.WebSocketHandler):
@@ -59,7 +58,9 @@ class FakeImageHandler(web.RequestHandler):
         image_data = image_data[0]
         _, image_b64 = image_data.split(",", 1)
         data = b64decode(image_b64)
-        do_ocr(data)
+        text = do_ocr(data)
+        for client in clients:
+            client.write_message(text)
 
 def get_app():
     return web.Application([

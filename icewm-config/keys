@@ -16,6 +16,8 @@ key "Super+o"       rofi -show window
 # TODO: wat
 # bindsym "Super+semicolon" i3lock -c 222222
 
+key "Super+w" icesh -s maximize
+
 key "Super+Ctrl+c" codepoint
 key "Super+Ctrl+b" number bin
 key "Super+Ctrl+n" number dec

@@ -1,0 +1,10 @@
+#!/bin/bash
+# WINDOW, X, Y, WIDTH, HEIGHT, SCREEN
+eval $(xdotool getwindowfocus getwindowgeometry -shell)
+
+width_delta=${1:-0}
+height_delta=${2:-0}
+let new_width=$WIDTH+$width_delta
+let new_height=$HEIGHT+$height_delta
+
+test "$WINDOW" && xdotool windowsize "$WINDOW" "$new_width" "$new_height"

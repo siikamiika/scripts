@@ -1,0 +1,12 @@
+#!/bin/bash
+# WINDOW, X, Y, WIDTH, HEIGHT, SCREEN
+eval $(xdotool getwindowfocus getwindowgeometry -shell)
+
+# also fix offset
+let x_delta=${1:-0}-2
+let y_delta=${2:-0}-22
+
+let new_x=$X+$x_delta
+let new_y=$Y+$y_delta
+
+test "$WINDOW" && xdotool windowmove "$WINDOW" "$new_x" "$new_y"

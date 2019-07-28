@@ -4,7 +4,8 @@ import subprocess
 import os
 
 NAME = sys.argv[1]
-STORAGE_PATH = f'/tmp/icewm-toggle/{NAME}'
+PID = subprocess.getoutput('icesh -f list').split()[2]
+STORAGE_PATH = f'/tmp/icewm-toggle/{NAME}-{PID}'
 ACTIONS = sys.argv[2:]
 
 os.makedirs('/tmp/icewm-toggle', exist_ok=True)

@@ -14,7 +14,7 @@ FocusOnAppRaise=1 # 0/1
 # RequestFocusOnAppRaise=1 # 0/1
 
 #  Raise windows when focused
-# RaiseOnFocus=0 # 0/1
+RaiseOnFocus=0 # 0/1
 
 #  Focus window when client area clicked
 # FocusOnClickClient=1 # 0/1
@@ -134,7 +134,7 @@ FocusOnAppRaise=1 # 0/1
 # MenuMouseTracking=0 # 0/1
 
 #  Auto raise windows after delay
-AutoRaise=1 # 0/1
+AutoRaise=0 # 0/1
 
 #  Delay pointer focusing when mouse moves
 # DelayPointerFocus=1 # 0/1
@@ -668,13 +668,13 @@ KeyWinRestore="Super+d"
 
 # KeyWinMinimize="Alt+F9"
 
-KeyWinMaximize="Super+Shift+f"
+# KeyWinMaximize="Super+Shift+f"
 
 # KeyWinMaximizeVert="Alt+Shift+F10"
 
 # KeyWinMaximizeHoriz=""
 
-KeyWinFullscreen="Super+f"
+# KeyWinFullscreen="Super+f"
 
 # KeyWinHide="Alt+Shift+F12"
 

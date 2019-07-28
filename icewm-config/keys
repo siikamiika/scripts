@@ -18,6 +18,10 @@ key "Super+o"       rofi -show window
 
 key "Super+w" icesh -s maximize
 
+# fullscreen/maximize focused
+key "Super+f" /home/siikamiika/.icewm/scripts/cycle-action fullscreen '-f raise fullscreen' '-f raise restore'
+key "Super+Shift+f" /home/siikamiika/.icewm/scripts/cycle-action maximize '-f raise maximize' '-f raise restore'
+
 key "Super+Ctrl+c" codepoint
 key "Super+Ctrl+b" number bin
 key "Super+Ctrl+n" number dec

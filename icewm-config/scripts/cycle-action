@@ -1,0 +1,28 @@
+#!/usr/bin/env python3
+import sys
+import subprocess
+import os
+
+NAME = sys.argv[1]
+STORAGE_PATH = f'/tmp/icewm-toggle/{NAME}'
+ACTIONS = sys.argv[2:]
+
+os.makedirs('/tmp/icewm-toggle', exist_ok=True)
+
+previous_action = None
+if os.path.isfile(STORAGE_PATH):
+    with open(STORAGE_PATH) as f:
+        try:
+            previous_action = int(f.read())
+        except:
+            print('Invalid data in storage')
+
+new_action = 0
+if previous_action is not None:
+    new_action = (previous_action + 1) % len(ACTIONS)
+
+subprocess.call(['icesh'] + ACTIONS[new_action].split())
+print(ACTIONS[new_action])
+
+with open(STORAGE_PATH, 'w') as f:
+    f.write(str(new_action))

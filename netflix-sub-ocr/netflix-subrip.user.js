@@ -23,16 +23,31 @@ function toDataURL(url, cb) {
     xhr.send();
 }
 
-window.setTimeout(() => {
+let observer = null;
+
+function startObserver() {
     let subtitles = querySelector('.image-based-timed-text svg');
-    new MutationObserver(function(mutations) {
+    let observer = new MutationObserver(function(mutations) {
         let img = mutations[0].target.firstChild;
         toDataURL(img.href.baseVal, function(dataUrl) {
             let img = document.createElement('img');
             img.src = 'http://localhost:9873/fake_image?image_data='+encodeURIComponent(dataUrl);
         });
-    }).observe(
+    });
+    observer.observe(
         subtitles,
         {childList: true}
     );
+    return observer;
+}
+
+window.setInterval(() => {
+    try {
+        if (observer) {
+            observer.disconnect();
+        }
+        observer = startObserver();
+    } catch (e) {
+        console.debug('subtitles not found');
+    }
 }, 5000);

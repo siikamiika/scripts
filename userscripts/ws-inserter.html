@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebSocket Inserter</title>
+        <meta charset="utf-8">
+        <style type="text/css">
+            body {
+                font-size: 24px;
+                padding-bottom: 30vh;
+                max-width: 600px;
+            }
+        </style>
+    </head>
+    <body>
+        <input id="ws-address"></input>
+        <script type="text/javascript">
+            let wsAddressElement = document.getElementById('ws-address');
+            let ws;
+            let cache = [];
+
+            function connectToWebsocket(address) {
+                if (ws) {
+                    try {
+                        ws.close();
+                    } catch (err) { }
+                }
+
+                ws = new WebSocket('ws://' + address);
+                ws.onmessage = handleMessage;
+            }
+
+            function handleMessage(data) {
+                const text = data.data;
+                if (!text) return;
+
+                for (let line of text.split('\n')) {
+                    const p = document.createElement('p');
+                    p.innerText = line;
+                    document.body.appendChild(p);
+                    cache.push(p);
+                }
+
+                updateCache();
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+
+            function updateCache() {
+                for (let element of cache.slice(0, -100)) {
+                    document.body.removeChild(element);
+                }
+
+                cache = cache.slice(-100);
+                localStorage.setItem('ws-inserter-history', JSON.stringify(cache.map(e => e.innerText)));
+            }
+
+            wsAddressElement.addEventListener('change', (event) => {
+                const address = event.target.value;
+                localStorage.setItem('ws-inserter-address', address);
+                connectToWebsocket(address);
+            });
+
+            window.addEventListener('DOMContentLoaded', (event) => {
+                const address = localStorage.getItem('ws-inserter-address');
+                wsAddressElement.value = address;
+                connectToWebsocket(address);
+
+                for (let text of JSON.parse(localStorage.getItem('ws-inserter-history'))) {
+                    const p = document.createElement('p');
+                    p.innerText = text;
+                    document.body.appendChild(p);
+                    cache.push(p);
+                }
+
+                window.scrollTo(0, document.body.scrollHeight);
+            });
+        </script>
+    </body>
+</html>

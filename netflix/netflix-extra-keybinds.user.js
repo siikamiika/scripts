@@ -35,6 +35,7 @@ class NetflixController {
 }
 
 let netflixController = new NetflixController();
+let startedPlaying = false;
 
 // key listeners
 document.addEventListener('keydown', function(e) {
@@ -46,9 +47,34 @@ document.addEventListener('keydown', function(e) {
 });
 
 // other events
-document.addEventListener('mouseout', function(e){
+document.addEventListener('blur', function(e){
     netflixController.pause();
+    startedPlaying = false;
 });
-document.addEventListener('mouseover', function(e){
-    netflixController.play();
+
+document.addEventListener('mousemove', function(e){
+    const subadub = document.querySelector('#subadub-custom-subs');
+    if (!subadub) {
+        if (!startedPlaying) {
+            netflixController.play();
+        }
+        startedPlaying = true;
+        return;
+    }
+    let target = e.target;
+    while (target) {
+        if (target === subadub) {
+            netflixController.pause();
+            startedPlaying = false;
+            return;
+        }
+        if (target === document.querySelector('#appMountPoint')) {
+            if (!startedPlaying) {
+                netflixController.play();
+            }
+            startedPlaying = true;
+            return;
+        }
+        target = target.parentElement;
+    }
 });

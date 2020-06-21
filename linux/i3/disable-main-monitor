@@ -1,0 +1,12 @@
+#!/usr/bin/bash
+
+# don't run the hack below if it's not needed, it will cause a nasty flash
+if ! xrandr --listmonitors | grep -q HDMI-1 ; then
+    exit
+fi
+
+# i3 workspace monitor fallback doesn't work as expected, disable DP-1 until all workspaces are parented to DVI-D-1
+xrandr --output DP-1 --off
+xrandr --output HDMI-1 --off
+xrandr --output DVI-D-1 --primary
+xrandr --output DP-1 --right-of DVI-D-1 --mode 1920x1080

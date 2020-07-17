@@ -1,0 +1,40 @@
+#!/bin/sh
+
+SOURCE="alsa_output.usb-Samson_Technologies_Samson_GoMic-00.analog-stereo.monitor"
+DEST_CARD="bluez_card.4C_87_5D_0D_AC_82"
+DEST_SINK="bluez_sink.4C_87_5D_0D_AC_82.a2dp_sink"
+
+# $1: card
+has_card()
+{
+    pactl list short cards | awk '{print $2}' | grep -Fq "$1"
+}
+
+# $1: sink
+has_module_loopback()
+{
+    pactl list short modules | grep -q "[0-9]\+\smodule-loopback.*sink=$1"
+}
+
+# $1: source
+# $2: sink
+create_loopback()
+{
+    pactl load-module module-loopback latency_msec=1 source="$1" sink="$2" source_dont_move=1 sink_dont_move=1
+    >&2 echo "Created loopback from $1 to $2"
+}
+
+listen_new_cards()
+{
+    pactl subscribe | grep --line-buffered "Event 'new' on card"
+}
+
+listen_new_cards | \
+while read i; do
+    if has_card "$DEST_CARD"; then
+        if has_module_loopback "$DEST_SINK"; then
+            continue
+        fi
+        create_loopback "$SOURCE" "$DEST_SINK"
+    fi
+done

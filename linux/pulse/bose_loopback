@@ -4,6 +4,13 @@ SOURCE="alsa_output.usb-Samson_Technologies_Samson_GoMic-00.analog-stereo.monito
 DEST_CARD="bluez_card.4C_87_5D_0D_AC_82"
 DEST_SINK="bluez_sink.4C_87_5D_0D_AC_82.a2dp_sink"
 
+cleanup()
+{
+    exit 0
+}
+
+trap cleanup SIGINT SIGTERM
+
 # $1: card
 has_card()
 {
@@ -26,7 +33,12 @@ create_loopback()
 
 listen_new_cards()
 {
-    pactl subscribe | grep --line-buffered "Event 'new' on card"
+    while true; do
+        pactl subscribe | grep --line-buffered "Event 'new' on card"
+        test $? -gt 128 && break
+        >&2 echo "Pulseaudio disconnected, restarting..."
+        sleep 2
+    done
 }
 
 listen_new_cards | \

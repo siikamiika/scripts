@@ -34,7 +34,7 @@ create_loopback()
 listen_new_cards()
 {
     while true; do
-        pactl subscribe | grep --line-buffered "Event 'new' on card"
+        pactl subscribe | grep --line-buffered "Event '\(new\|change\)' on card"
         test $? -gt 128 && break
         >&2 echo "Pulseaudio disconnected, restarting..."
         sleep 2

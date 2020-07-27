@@ -1,0 +1,13 @@
+#!/bin/sh
+
+post_data="$(jq --null-input --compact-output --arg str "$1" '{trackingCodes: [$str]}')"
+jq_command='.shipments[0].events | reverse[] | .timestamp + "; " + .description.en + "; " + .locationName'
+
+while true; do
+    tput sc
+    curl --no-progress-meter -H "content-type: application/json;charset=utf-8" -d "$post_data" https://www.posti.fi/henkiloasiakkaat/seuranta/api/shipments | jq "$jq_command"
+    date
+    sleep 600
+    tput rc
+    tput ed
+done

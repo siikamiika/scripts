@@ -1,13 +1,50 @@
 #!/bin/sh
 
-post_data="$(jq --null-input --compact-output --arg str "$1" '{trackingCodes: [$str]}')"
-jq_command='.shipments[0].events | reverse[] | .timestamp + "; " + .description.en + "; " + .locationName'
+API_URL='https://www.posti.fi/henkiloasiakkaat/seuranta/api/shipments'
+
+tracking_events()
+{
+    post_data="$(jq -n -c --arg str "$1" '{trackingCodes: [$str]}')"
+    curl --no-progress-meter -H "content-type: application/json;charset=utf-8" -d "$post_data" "$API_URL" | jq -c '.shipments[0].events | reverse[]'
+}
+
+event_get_timestamp()
+{
+    datetime=$(echo "$1" | jq -r '.timestamp')
+    date -d "$datetime" +%s
+}
+
+event_format()
+{
+    local event="$1"
+
+    # time
+    now=$(date +%s)
+    event_timestamp=$(event_get_timestamp "$event")
+    let hours_since_event="($now - $event_timestamp) / 3600"
+    event_datetime=$(date -d "@$event_timestamp" '+%Y-%m-%d %H:%M:%S')
+    # description
+    description=$(echo "$event" | jq -r '.description.en')
+    # location
+    location=$(echo "$event" | jq -r '.locationName')
+
+    echo -e "$event_datetime ($hours_since_event h ago)\t$description\t$location"
+}
 
 while true; do
     tput sc
-    curl --no-progress-meter -H "content-type: application/json;charset=utf-8" -d "$post_data" https://www.posti.fi/henkiloasiakkaat/seuranta/api/shipments | jq "$jq_command"
-    date
-    sleep 600
-    tput rc
+
+    formatted_events=$(
+        tracking_events "$1" | \
+        while read event; do
+            event_format "$event"
+        done
+    )
+
     tput ed
+    echo "$formatted_events"
+    date '+%Y-%m-%d %H:%M:%S'
+    tput rc
+
+    sleep 600
 done

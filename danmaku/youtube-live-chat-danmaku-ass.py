@@ -132,13 +132,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def generate(self, messages):
         yield self.ass_header
         for message in messages:
-            yield self._generate_dialogue(message['text'], message['offset_msec'], extra=message['renderer'])
+            yield self._generate_dialogue(message)
 
-    def _generate_dialogue(self, text, start_time, duration=None, extra=None):
+    def _generate_dialogue(self, message, duration=None):
         # Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-        # Dialogue: 0,0:00:05.75,0:00:07.50,Default,,0,0,0,,Sample text
-        # Dialogue: 0,0:02:03.46,0:07:36.79,Rtl,,20,20,2,,{\3c&HFFFFFF\fs16\move(1280,0,0,0)}eee ｛｝?
+        # Dialogue: 0,0:00:00.00,0:00:07.00,Rtl,,20,20,2,,{\q2\fs36\move(1478,72,-198,72)}{\1c&H888888\alpha&H44}Author: {\1c&Hffffff\alpha&H00}body
 
+        start_time = message['offset_msec']
         if duration is None:
             duration = self.default_duration
         end_time = start_time + duration
@@ -148,40 +148,56 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if emoji_match in emoji:
                 return emoji[emoji_match]
             return emoji_match
-        text = re.sub('.', sub_emoji, text)
+        def sanitize(text):
+            text = re.sub('\s+', ' ', text)
+            text = text.replace('{', '｛')
+            text = text.replace('}', '｝')
+            return text
 
-        text_width = self._estimate_width(text)
+        body = re.sub('.', sub_emoji, message['body'])
+        if message['paid'] is not None:
+            body = '[{}] {}'.format(message['paid'], body)
+        author = message['author']
+
+        text_width = int(self._estimate_width(author + ': ' + body) * message['size'])
         text_width_half = int(text_width / 2)
         y_offset = FONT_SIZE * (self.layers.add_bullet((text_width, start_time, end_time)) + 1)
         start_pos = (RES_X + text_width_half, y_offset)
         end_pos = (-text_width_half, y_offset)
 
-        custom_color = None
-        if extra is not None:
-            try:
-                argb = extra['bodyBackgroundColor']
-                bgra = struct.unpack('<I', struct.pack('>I', argb))[0]
-                custom_color = '{:06x}'.format(bgra >> 8)
-            except (KeyError, IndexError):
-                pass
+        color_argb = message['color']
+        color_bgra = struct.unpack('<I', struct.pack('>I', color_argb))[0]
+        color_bgr = color_bgra >> 8
+
+        z_layer = 0
+        if message['size'] > 1:
+            z_layer = 0x1fe
+            z_layer += color_bgr & 0xff # red
+            z_layer -= (color_bgr >> 8) & 0xff # green
+            z_layer -= (color_bgr >> 16) & 0xff # blue
 
         nowrap = "\\q2"
-        color = "\\1c&Hffffff" if custom_color is None else '\\1c&H{}'.format(custom_color)
-        alpha = '\\alpha&H22' if custom_color is None else '\\alpha&H00'
-        font_size = "\\fs{}".format(FONT_SIZE if custom_color is None else int(FONT_SIZE * 1.3))
+        color = '\\1c&H{:06x}'.format(color_bgr)
+        author_color = '\\1c&H888888'
+        alpha = '\\alpha&H00'
+        author_alpha = '\\alpha&H44'
+        font_size = "\\fs{}".format(int(FONT_SIZE * message['size']))
         move = "\\move({start[0]},{start[1]},{end[0]},{end[1]})".format(start=start_pos, end=end_pos)
-        text = re.sub('\s+', ' ', text)
-        text = text.replace('{', '｛')
-        text = text.replace('}', '｝')
-        format_data = {
+
+        formatted_text = "{{{format}}}{{{author_format}}}{author}: {{{body_format}}}{body}".format(**{
+            'format': nowrap + font_size + move,
+            'author_format': author_color + author_alpha,
+            'body_format': color + alpha,
+            'author': sanitize(author),
+            'body': sanitize(body),
+        })
+        return "Dialogue: {z_layer},{start},{end},{type},,20,20,2,,{formatted_text}\n".format(**{
+            'z_layer': max(0, z_layer),
             'start': self._format_time(start_time),
             'end': self._format_time(end_time),
             'type': 'Rtl',
-            'format': nowrap + color + alpha + font_size + move,
-            'text': text,
-            'z_layer': '0' if custom_color is None else '1',
-        }
-        return "Dialogue: {z_layer},{start},{end},{type},,20,20,2,,{{{format}}}{text}\n".format(**format_data)
+            'formatted_text': formatted_text,
+        })
 
     def _format_time(self, time_msec):
         time_sec = time_msec / 1000
@@ -233,33 +249,40 @@ class YoutubeLiveChatReplayParser:
                 continue
             action = action['item']
 
-            message_text = None
+            body = None
+            author = None
+            paid = None
+            size = 1.0
+            color = 0x00ffffff # argb
             renderer = None
 
             if 'liveChatTextMessageRenderer' in action:
                 renderer = action['liveChatTextMessageRenderer']
-                message = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
-                message_text = "{}: {}".format(
-                    renderer['authorName']['simpleText'],
-                    message,
-                )
+                body = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
+                author = renderer['authorName']['simpleText']
             elif 'liveChatPaidMessageRenderer' in action:
                 renderer = action['liveChatPaidMessageRenderer']
-                message = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
-                message_text = "{}: ({}) {}".format(
-                    renderer['authorName']['simpleText'],
-                    renderer['purchaseAmountText']['simpleText'],
-                    message,
-                )
+                body = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
+                author = renderer['authorName']['simpleText']
+                paid = renderer['purchaseAmountText']['simpleText']
+                size = 1.3
+                color = renderer['bodyBackgroundColor']
             elif 'liveChatMembershipItemRenderer' in action:
                 renderer = action['liveChatMembershipItemRenderer']
-                message_text = "New member: {}".format(renderer['authorName']['simpleText'])
+                body = self._transform_renderer_message(renderer['headerSubtext']) if 'headerSubtext' in renderer else ''
+                author = renderer['authorName']['simpleText']
+                size = 1.2
+                color = 0x000f9d58 # argb
 
-            if message_text is not None:
+            if body is not None:
                 yield {
-                    'text': message_text,
-                    'offset_msec': offset_msec,
+                    'body': body,
+                    'author': author,
+                    'paid': paid,
+                    'size': size,
+                    'color': color,
                     'renderer': renderer,
+                    'offset_msec': offset_msec,
                 }
 
 

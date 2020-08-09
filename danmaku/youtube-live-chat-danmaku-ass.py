@@ -62,40 +62,45 @@ test_data = {
     }
 }
 
+class DanmakuBullet:
+    def __init__(self, length, start_time, end_time):
+        self.length = length
+        self.start_time = start_time
+        self.end_time = end_time
+
 class DanmakuLayers:
     def __init__(self, width, height, size):
         self.width = width
         self.height = height
-        self.size = size
 
         self.layers = [[] for _ in range(int(self.height / size) - 1)]
 
-    def add_bullet(self, bullet):
-        length, start_time, end_time = bullet
+    def add_element(self, length, start_time, end_time):
+        bullet = DanmakuBullet(length, start_time, end_time)
         for i, layer in enumerate(self.layers):
             layer2 = []
             self.layers[i] = layer2
+            is_full = False
             for bullet2 in layer:
-                bullet2_tail_start1 = self._bullet_tail_position(bullet2, start_time)
-                bullet2_tail_end1 = self._bullet_tail_position(bullet2, end_time)
-                bullet1_head_end1 = self._bullet_head_position(bullet, end_time)
-                if (bullet2_tail_start1 < 0 or bullet2_tail_end1 < bullet1_head_end1):
+                if bullet2.end_time > bullet.start_time:
                     layer2.append(bullet2)
-            if len(layer2) == 0:
+                bullet2_tail_start1 = self._bullet_tail_position(bullet2, bullet.start_time)
+                bullet1_head_end2 = self._bullet_head_position(bullet, bullet2.end_time)
+                if bullet2_tail_start1 < 0 or bullet1_head_end2 > self.width:
+                    is_full = True
+            if not is_full:
                 layer2.append(bullet)
                 return i
         return random.randint(0, len(self.layers))
 
     def _bullet_tail_position(self, bullet, current_time):
-        length, start_time, end_time = bullet
-        velocity = (length + self.width) / (end_time - start_time)
-        distance = velocity * (current_time - start_time)
-        return distance - length
+        velocity = (bullet.length + self.width) / (bullet.end_time - bullet.start_time)
+        distance = velocity * (current_time - bullet.start_time)
+        return distance - bullet.length
 
     def _bullet_head_position(self, bullet, current_time):
-        length, start_time, end_time = bullet
-        velocity = (length + self.width) / (end_time - start_time)
-        distance = velocity * (current_time - start_time)
+        velocity = (bullet.length + self.width) / (bullet.end_time - bullet.start_time)
+        distance = velocity * (current_time - bullet.start_time)
         return distance
 
 
@@ -161,7 +166,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         text_width = int(self._estimate_width(author + ': ' + body) * message['size'])
         text_width_half = int(text_width / 2)
-        y_offset = FONT_SIZE * (self.layers.add_bullet((text_width, start_time, end_time)) + 1)
+        y_offset = FONT_SIZE * (self.layers.add_element(text_width, start_time, end_time) + 1)
         start_pos = (RES_X + text_width_half, y_offset)
         end_pos = (-text_width_half, y_offset)
 

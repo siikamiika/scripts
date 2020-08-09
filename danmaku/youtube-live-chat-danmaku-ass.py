@@ -14,6 +14,8 @@ FONT_SIZE = 36
 # libass doesn't support emoji well
 with open('./emoji.json', encoding='utf-8') as f:
     emoji = {o['emoji']: o['shortname'] for o in json.loads(f.read())}
+with open('./char_widths.json', encoding='utf-8') as f:
+    char_widths = json.loads(f.read())
 
 test_data = {
     "replayChatItemAction": {
@@ -68,6 +70,13 @@ class DanmakuBullet:
         self.start_time = start_time
         self.end_time = end_time
 
+    def shift(self, offset):
+        self.start_time += offset
+        self.end_time += offset
+
+    def __repr__(self):
+        return 'DanmakuBullet<length={}, start_time={}, end_time={}>'.format(self.length, self.start_time, self.end_time)
+
 class DanmakuLayers:
     def __init__(self, width, height, size):
         self.width = width
@@ -77,6 +86,7 @@ class DanmakuLayers:
 
     def add_element(self, length, start_time, end_time):
         bullet = DanmakuBullet(length, start_time, end_time)
+
         for i, layer in enumerate(self.layers):
             layer2 = []
             self.layers[i] = layer2
@@ -90,18 +100,41 @@ class DanmakuLayers:
                     is_full = True
             if not is_full:
                 layer2.append(bullet)
-                return i
-        return random.randint(0, len(self.layers))
+                return i, 0
+
+        min_offset_idx = None
+        min_offset = None
+        for i, layer in enumerate(self.layers):
+            max_offset = 0.0
+            for bullet2 in layer:
+                bullet2_tail_start1 = self._bullet_tail_position(bullet2, bullet.start_time)
+                bullet1_head_end2 = self._bullet_head_position(bullet, bullet2.end_time)
+                bullet2_tail_start1_offset = max(0, 0 - bullet2_tail_start1)
+                bullet1_head_end2_offset = max(0, bullet1_head_end2 - self.width)
+                max_offset = max(max_offset, bullet2_tail_start1_offset, bullet1_head_end2_offset)
+            if min_offset_idx is None or max_offset < min_offset:
+                min_offset_idx, min_offset = i, max_offset
+        min_time_offset = self._bullet_travel_time(bullet, min_offset)
+        bullet.shift(min_time_offset)
+        self.layers[min_offset_idx].append(bullet)
+        return min_offset_idx, min_time_offset
 
     def _bullet_tail_position(self, bullet, current_time):
-        velocity = (bullet.length + self.width) / (bullet.end_time - bullet.start_time)
-        distance = velocity * (current_time - bullet.start_time)
-        return distance - bullet.length
+        return self._bullet_distance(bullet, current_time) - bullet.length
 
     def _bullet_head_position(self, bullet, current_time):
-        velocity = (bullet.length + self.width) / (bullet.end_time - bullet.start_time)
-        distance = velocity * (current_time - bullet.start_time)
-        return distance
+        return self._bullet_distance(bullet, current_time)
+
+    def _bullet_distance(self, bullet, current_time):
+        velocity = self._bullet_velocity(bullet)
+        return velocity * (current_time - bullet.start_time)
+
+    def _bullet_velocity(self, bullet):
+        return (bullet.length + self.width) / (bullet.end_time - bullet.start_time)
+
+    def _bullet_travel_time(self, bullet, distance):
+        velocity = self._bullet_velocity(bullet)
+        return distance / velocity
 
 
 class DanmakuASSGenerator:
@@ -166,9 +199,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         text_width = int(self._estimate_width(author + ': ' + body) * message['size'])
         text_width_half = int(text_width / 2)
-        y_offset = FONT_SIZE * (self.layers.add_element(text_width, start_time, end_time) + 1)
+
+        layer_index, time_offset = self.layers.add_element(text_width, start_time, end_time)
+
+        y_offset = FONT_SIZE * (layer_index + 1)
         start_pos = (RES_X + text_width_half, y_offset)
         end_pos = (-text_width_half, y_offset)
+
+        start_time += time_offset
+        end_time += time_offset
 
         def convert_color(color_argb):
             color_bgra = struct.unpack('<I', struct.pack('>I', color_argb))[0]
@@ -218,11 +257,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     def _estimate_width(self, text):
         length = 0
         for char in text:
-            if 0x4e00 <= ord(char) <= 0x9fff:
-                length += 2
-            else:
-                length += 1
-        return length * FONT_SIZE * 0.5
+            length += char_widths[char] / 100
+        return length * FONT_SIZE * 0.9
 
 
 class YoutubeLiveChatReplayParser:

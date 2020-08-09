@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+</head>
+<style>
+#measure-text {
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap;
+    font-family: "Noto Sans CJK JP";
+    font-weight: bold;
+    font-size: 100px;
+}
+</style>
+<div id="measure-text"></div>
+<script>
+function measureChar(c) {
+    var measureTextElement = document.getElementById("measure-text");
+    measureTextElement.textContent = c;
+    return measureTextElement.clientWidth;
+}
+
+const results = {};
+for (let codePoint = 0x0; codePoint <= 0x110000; codePoint++) {
+    try {
+        const c = String.fromCodePoint(codePoint);
+        results[c] = measureChar(c);
+    } catch (e) { }
+}
+console.log(JSON.stringify(results));
+</script>

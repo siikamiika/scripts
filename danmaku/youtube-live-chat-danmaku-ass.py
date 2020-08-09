@@ -174,13 +174,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         for message in messages:
             yield self._generate_dialogue(message)
 
-    def _generate_dialogue(self, message, duration=None):
+    def _generate_dialogue(self, message):
         # Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Dialogue: 0,0:00:00.00,0:00:07.00,Rtl,,20,20,2,,{\q2\fs36\move(1478,72,-198,72)}{\1c&H888888\alpha&H44}Author: {\1c&Hffffff\alpha&H00}body
 
         start_time = message['offset_msec']
-        if duration is None:
-            duration = self.default_duration
+        duration = self.default_duration * message['duration']
         end_time = start_time + duration
 
         def sub_emoji(match):
@@ -219,13 +218,6 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         color_bgr = convert_color(message['color'])
         author_color_bgr = convert_color(message['author_color'])
 
-        z_layer = 0
-        if message['size'] > 1:
-            z_layer = 0x1fe
-            z_layer += color_bgr & 0xff # red
-            z_layer -= (color_bgr >> 8) & 0xff # green
-            z_layer -= (color_bgr >> 16) & 0xff # blue
-
         nowrap = "\\q2"
         color = '\\1c&H{:06x}'.format(color_bgr)
         author_color = '\\1c&H{:06x}'.format(author_color_bgr)
@@ -242,7 +234,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             'body': sanitize(body),
         })
         return "Dialogue: {z_layer},{start},{end},{type},,20,20,2,,{formatted_text}\n".format(**{
-            'z_layer': max(0, z_layer),
+            'z_layer': 0,
             'start': self._format_time(start_time),
             'end': self._format_time(end_time),
             'type': 'Rtl',
@@ -319,6 +311,20 @@ class YoutubeLiveChatReplayParser:
             return 1.3
         return 1.0
 
+    def _badge_duration(self, badge_types):
+        if 'moderator' in badge_types:
+            return 1.5
+        if 'verified' in badge_types:
+            return 1.3
+        return 1.0
+
+    def _color_duration(self, color):
+        duration = 0x1fe
+        duration += (color >> 16) & 0xff # red
+        duration -= (color >> 8) & 0xff # green
+        duration -= color & 0xff # blue
+        return (1 + duration / 0x2fd) * 1.3
+
     def _parse_replay_chat_item_action(self, data):
         if 'replayChatItemAction' not in data:
             return
@@ -345,16 +351,18 @@ class YoutubeLiveChatReplayParser:
             author_color = 0x00888888
             alpha = 0x00
             author_alpha = 0xbb
+            duration = 1.0
             renderer = None
 
             def update_badges(renderer):
-                nonlocal author, author_color, author_alpha, size
+                nonlocal author, author_color, author_alpha, size, duration
                 if 'authorBadges' in renderer:
                     badge_types = self._parse_badge_types(renderer['authorBadges'])
                     author = (author + ' ' + self._badge_text(badge_types)).strip()
                     author_color = self._badge_color(badge_types)
                     author_alpha = self._badge_alpha(badge_types)
                     size *= self._badge_size(badge_types)
+                    duration *= self._badge_duration(badge_types)
 
             if 'liveChatTextMessageRenderer' in action:
                 renderer = action['liveChatTextMessageRenderer']
@@ -369,6 +377,7 @@ class YoutubeLiveChatReplayParser:
                 update_badges(renderer)
                 size *= 1.1
                 color = renderer['bodyBackgroundColor']
+                duration *= self._color_duration(color)
             elif 'liveChatMembershipItemRenderer' in action:
                 renderer = action['liveChatMembershipItemRenderer']
                 body = self._transform_renderer_message(renderer['headerSubtext']) if 'headerSubtext' in renderer else ''
@@ -386,6 +395,7 @@ class YoutubeLiveChatReplayParser:
                     'author_color': author_color,
                     'alpha': alpha,
                     'author_alpha': author_alpha,
+                    'duration': duration,
                     'renderer': renderer,
                     'offset_msec': offset_msec,
                 }

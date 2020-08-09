@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 import re
 import json
-import random
 import sys
 import struct
 
@@ -11,10 +11,12 @@ RES_X = 1280
 RES_Y = 720
 FONT_SIZE = 36
 
+SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+
 # libass doesn't support emoji well
-with open('./emoji.json', encoding='utf-8') as f:
+with open(SCRIPT_PATH + '/emoji.json', encoding='utf-8') as f:
     emoji = {o['emoji']: o['shortname'] for o in json.loads(f.read())}
-with open('./char_widths.json', encoding='utf-8') as f:
+with open(SCRIPT_PATH + '/char_widths.json', encoding='utf-8') as f:
     char_widths = json.loads(f.read())
 
 test_data = {

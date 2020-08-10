@@ -9,7 +9,7 @@ import struct
 
 RES_X = 1280
 RES_Y = 720
-FONT_SIZE = 36
+FONT_SIZE = 30
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -80,16 +80,17 @@ class DanmakuBullet:
         return 'DanmakuBullet<length={}, start_time={}, end_time={}>'.format(self.length, self.start_time, self.end_time)
 
 class DanmakuLayers:
-    def __init__(self, width, height, size):
+    def __init__(self, width, layer_count):
         self.width = width
-        self.height = height
 
-        self.layers = [[] for _ in range(int(self.height / size) - 1)]
+        self.layers = [[] for _ in range(layer_count)]
+        self.layer_order = list(range(len(self.layers)))
 
     def add_element(self, length, start_time, end_time):
         bullet = DanmakuBullet(length, start_time, end_time)
 
-        for i, layer in enumerate(self.layers):
+        for i in self.layer_order:
+            layer = self.layers[i]
             layer2 = []
             self.layers[i] = layer2
             is_full = False
@@ -106,7 +107,8 @@ class DanmakuLayers:
 
         min_offset_idx = None
         min_offset = None
-        for i, layer in enumerate(self.layers):
+        for i in self.layer_order:
+            layer = self.layers[i]
             max_offset = 0.0
             for bullet2 in layer:
                 bullet2_tail_start1 = self._bullet_tail_position(bullet2, bullet.start_time)
@@ -120,6 +122,16 @@ class DanmakuLayers:
         bullet.shift(min_time_offset)
         self.layers[min_offset_idx].append(bullet)
         return min_offset_idx, min_time_offset
+
+    def update_priority(self, n, remainder):
+        priority = []
+        rest = []
+        for i in range(len(self.layers)):
+            if i % n == remainder:
+                priority.append(i)
+            else:
+                rest.append(i)
+        self.layer_order = priority + rest
 
     def _bullet_tail_position(self, bullet, current_time):
         return self._bullet_distance(bullet, current_time) - bullet.length
@@ -167,7 +179,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
     def __init__(self):
         self.default_duration = 7000
-        self.layers = DanmakuLayers(RES_X, RES_Y, FONT_SIZE)
+        self.y_layer_count = int(RES_Y / FONT_SIZE) - 1
+        self.z_layer_to_danmaku_index = {}
+        self.danmaku_layers = []
 
     def generate(self, messages):
         yield self.ass_header
@@ -181,6 +195,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         start_time = message['offset_msec']
         duration = self.default_duration * message['duration']
         end_time = start_time + duration
+
+        z_layer = int((message['duration'] - 1.0) * 10)
+        danmaku_index = self.z_layer_to_danmaku_index.get(z_layer)
+        if danmaku_index is None:
+            danmaku_index = len(self.danmaku_layers)
+            self.z_layer_to_danmaku_index[z_layer] = danmaku_index
+            self.danmaku_layers.append(DanmakuLayers(RES_X, self.y_layer_count))
+            for danmaku_index2, danmaku_layers2 in enumerate(self.danmaku_layers):
+                danmaku_layers2.update_priority(danmaku_index + 1, danmaku_index2)
+        danmaku_layers = self.danmaku_layers[danmaku_index]
 
         def sub_emoji(match):
             emoji_match = match.group(0)
@@ -201,7 +225,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         text_width = int(self._estimate_width(author + ': ' + body) * message['size'])
         text_width_half = int(text_width / 2)
 
-        layer_index, time_offset = self.layers.add_element(text_width, start_time, end_time)
+        layer_index, time_offset = danmaku_layers.add_element(text_width, start_time, end_time)
 
         y_offset = FONT_SIZE * (layer_index + 1)
         start_pos = (RES_X + text_width_half, y_offset)
@@ -234,7 +258,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             'body': sanitize(body),
         })
         return "Dialogue: {z_layer},{start},{end},{type},,20,20,2,,{formatted_text}\n".format(**{
-            'z_layer': 0,
+            'z_layer': z_layer,
             'start': self._format_time(start_time),
             'end': self._format_time(end_time),
             'type': 'Rtl',
@@ -313,9 +337,9 @@ class YoutubeLiveChatReplayParser:
 
     def _badge_duration(self, badge_types):
         if 'moderator' in badge_types:
-            return 1.5
+            return 2.5
         if 'verified' in badge_types:
-            return 1.3
+            return 1.5
         return 1.0
 
     def _color_duration(self, color):
@@ -323,7 +347,7 @@ class YoutubeLiveChatReplayParser:
         duration += (color >> 16) & 0xff # red
         duration -= (color >> 8) & 0xff # green
         duration -= color & 0xff # blue
-        return (1 + duration / 0x2fd) * 1.3
+        return (1 + (duration / 0x2fd) * 0.8)
 
     def _parse_replay_chat_item_action(self, data):
         if 'replayChatItemAction' not in data:

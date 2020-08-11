@@ -236,24 +236,25 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         def convert_color(color_argb):
             color_bgra = struct.unpack('<I', struct.pack('>I', color_argb))[0]
-            color_bgr = color_bgra >> 8
-            return color_bgr
+            alpha = color_bgra & 0xff
+            color_bgr = (color_bgra >> 8) & 0xffffff
+            return color_bgr, alpha
 
-        color_bgr = convert_color(message['color'])
-        author_color_bgr = convert_color(message['author_color'])
+        color_bgr, alpha = convert_color(message['color'])
+        author_color_bgr, author_alpha = convert_color(message['author_color'])
 
-        nowrap = "\\q2"
-        color = '\\1c&H{:06x}'.format(color_bgr)
-        author_color = '\\1c&H{:06x}'.format(author_color_bgr)
-        alpha = '\\alpha&H{:02x}'.format(message['alpha'])
-        author_alpha = '\\alpha&H{:02x}'.format(message['author_alpha'])
-        font_size = "\\fs{}".format(int(FONT_SIZE * message['size']))
-        move = "\\move({start[0]},{start[1]},{end[0]},{end[1]})".format(start=start_pos, end=end_pos)
+        ass_nowrap = "\\q2"
+        ass_color = '\\1c&H{:06x}'.format(color_bgr)
+        ass_author_color = '\\1c&H{:06x}'.format(author_color_bgr)
+        ass_alpha = '\\alpha&H{:02x}'.format(alpha)
+        ass_author_alpha = '\\alpha&H{:02x}'.format(author_alpha)
+        ass_font_size = "\\fs{}".format(int(FONT_SIZE * message['size']))
+        ass_move = "\\move({start[0]},{start[1]},{end[0]},{end[1]})".format(start=start_pos, end=end_pos)
 
-        formatted_text = "{{{format}}}{{{author_format}}}{author}: {{{body_format}}}{body}".format(**{
-            'format': nowrap + font_size + move,
-            'author_format': author_color + author_alpha,
-            'body_format': color + alpha,
+        ass_formatted_text = "{{{format}}}{{{author_format}}}{author}: {{{body_format}}}{body}".format(**{
+            'format': ass_nowrap + ass_font_size + ass_move,
+            'author_format': ass_author_color + ass_author_alpha,
+            'body_format': ass_color + ass_alpha,
             'author': sanitize(author),
             'body': sanitize(body),
         })
@@ -262,7 +263,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             'start': self._format_time(start_time),
             'end': self._format_time(end_time),
             'type': 'Rtl',
-            'formatted_text': formatted_text,
+            'formatted_text': ass_formatted_text,
         })
 
     def _format_time(self, time_msec):
@@ -311,28 +312,19 @@ class YoutubeLiveChatReplayParser:
         return badge_types
 
     def _badge_color(self, badge_types):
-        # color is argb
-        for badge_type, color in (('owner', 0x00ffd600), ('moderator', 0x005e84f1), ('sponsor', 0x002ba640)):
-            if badge_type in badge_types:
-                return color
-        return 0x00888888
+        if 'owner' in badge_types:
+            return 0x00ffd600
+        if 'moderator' in badge_types:
+            return 0x005e84f1
+        if 'sponsor' in badge_types:
+            return 0xaa2ba640
+        return 0xbb888888
 
     def _badge_text(self, badge_types):
         badges = [b[0] for b in badge_types]
         if len(badges) == 0:
             return ''
         return '({})'.format(','.join(badges))
-
-    def _badge_alpha(self, badge_types):
-        if 'owner' in badge_types:
-            return 0x00
-        if 'moderator' in badge_types:
-            return 0x00
-        if 'verified' in badge_types:
-            return 0x00
-        if 'sponsor' in badge_types:
-            return 0xaa
-        return 0xbb
 
     def _badge_size(self, badge_types):
         if 'owner' in badge_types:
@@ -380,19 +372,16 @@ class YoutubeLiveChatReplayParser:
             paid = None
             size = 1.0
             color = 0x00ffffff # argb
-            author_color = 0x00888888
-            alpha = 0x00
-            author_alpha = 0xbb
+            author_color = 0xbb888888
             duration = 1.0
             renderer = None
 
             def update_badges(renderer):
-                nonlocal author, author_color, author_alpha, size, duration
+                nonlocal author, author_color, size, duration
                 if 'authorBadges' in renderer:
                     badge_types = self._parse_badge_types(renderer['authorBadges'])
                     author = (author + ' ' + self._badge_text(badge_types)).strip()
                     author_color = self._badge_color(badge_types)
-                    author_alpha = self._badge_alpha(badge_types)
                     size *= self._badge_size(badge_types)
                     duration *= self._badge_duration(badge_types)
 
@@ -408,14 +397,14 @@ class YoutubeLiveChatReplayParser:
                 paid = renderer['purchaseAmountText']['simpleText']
                 update_badges(renderer)
                 size *= 1.1
-                color = renderer['bodyBackgroundColor']
+                color = (color & ~0xffffff) ^ (renderer['bodyBackgroundColor'] & 0xffffff)
                 duration *= self._color_duration(color)
             elif 'liveChatMembershipItemRenderer' in action:
                 renderer = action['liveChatMembershipItemRenderer']
                 body = self._transform_renderer_message(renderer['headerSubtext']) if 'headerSubtext' in renderer else ''
                 author = renderer['authorName']['simpleText']
                 update_badges(renderer)
-                color = 0x000f9d58 # argb
+                color = (color & ~0xffffff) ^ 0x000f9d58
 
             if body is not None:
                 yield {
@@ -425,8 +414,6 @@ class YoutubeLiveChatReplayParser:
                     'size': size,
                     'color': color,
                     'author_color': author_color,
-                    'alpha': alpha,
-                    'author_alpha': author_alpha,
                     'duration': duration,
                     'renderer': renderer,
                     'offset_msec': offset_msec,

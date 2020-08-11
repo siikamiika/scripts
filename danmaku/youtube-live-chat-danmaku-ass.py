@@ -300,6 +300,8 @@ class YoutubeLiveChatReplayParser:
             badge = badge['liveChatAuthorBadgeRenderer']
             if 'icon' in badge:
                 icon = badge['icon']
+                if icon['iconType'] == 'OWNER':
+                    badge_types.add('owner')
                 if icon['iconType'] == 'MODERATOR':
                     badge_types.add('moderator')
                 if icon['iconType'] == 'VERIFIED':
@@ -310,7 +312,7 @@ class YoutubeLiveChatReplayParser:
 
     def _badge_color(self, badge_types):
         # color is argb
-        for badge_type, color in (('moderator', 0x005e84f1), ('sponsor', 0x002ba640)):
+        for badge_type, color in (('owner', 0x00ffd600), ('moderator', 0x005e84f1), ('sponsor', 0x002ba640)):
             if badge_type in badge_types:
                 return color
         return 0x00888888
@@ -322,6 +324,8 @@ class YoutubeLiveChatReplayParser:
         return '({})'.format(','.join(badges))
 
     def _badge_alpha(self, badge_types):
+        if 'owner' in badge_types:
+            return 0x00
         if 'moderator' in badge_types:
             return 0x00
         if 'verified' in badge_types:
@@ -331,11 +335,15 @@ class YoutubeLiveChatReplayParser:
         return 0xbb
 
     def _badge_size(self, badge_types):
+        if 'owner' in badge_types:
+            return 1.3
         if 'moderator' in badge_types:
             return 1.3
         return 1.0
 
     def _badge_duration(self, badge_types):
+        if 'owner' in badge_types:
+            return 2.5
         if 'moderator' in badge_types:
             return 2.5
         if 'verified' in badge_types:

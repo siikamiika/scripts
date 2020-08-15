@@ -6,6 +6,8 @@ import re
 import json
 import sys
 import struct
+import hashlib
+import requests
 
 RES_X = 1280
 RES_Y = 720
@@ -208,8 +210,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         def sub_emoji(match):
             emoji_match = match.group(0)
-            if emoji_match in emoji:
-                return emoji[emoji_match]
+            # if emoji_match in emoji:
+            #     return emoji[emoji_match]
             return emoji_match
         def sanitize(text):
             text = re.sub('\s+', ' ', text)
@@ -227,7 +229,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 
         layer_index, time_offset = danmaku_layers.add_element(text_width, start_time, end_time)
 
-        y_offset = FONT_SIZE * (layer_index + 1)
+        y_offset = FONT_SIZE * (layer_index + 1.2)
         start_pos = (RES_X + text_width_half, y_offset)
         end_pos = (-text_width_half, y_offset)
 
@@ -249,7 +251,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         ass_alpha = '\\alpha&H{:02x}'.format(alpha)
         ass_author_alpha = '\\alpha&H{:02x}'.format(author_alpha)
         ass_font_size = "\\fs{}".format(int(FONT_SIZE * message['size']))
-        ass_move = "\\move({start[0]},{start[1]},{end[0]},{end[1]})".format(start=start_pos, end=end_pos)
+        ass_move = "\\move({start[0]:.0f},{start[1]:.0f},{end[0]:.0f},{end[1]:.0f})".format(start=start_pos, end=end_pos)
 
         ass_formatted_text = "{{{format}}}{{{author_format}}}{author}: {{{body_format}}}{body}".format(**{
             'format': ass_nowrap + ass_font_size + ass_move,
@@ -280,7 +282,88 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         return length * FONT_SIZE * 0.9
 
 
+class UrlCache:
+
+    HEADERS = {
+        'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0',
+        'Accept-Encoding': 'gzip, deflate',
+    }
+
+    def __init__(self, base_dir):
+        self._base_dir = base_dir
+
+    def ensure(self, context, url):
+        context_path = self._build_context_path(context)
+        cache_filename = self._hash_url(url)
+        full_path = os.path.join(context_path, cache_filename)
+        if os.path.isfile(full_path):
+            return full_path
+        self._download_url_content(url, full_path)
+        if not os.path.isfile(full_path):
+            raise RuntimeError('File download failed:\n  {}\n  --> {}'.format(url, full_path))
+        return full_path
+
+    def _hash_url(self, url):
+        return hashlib.sha256(url.encode('utf-8')).hexdigest()
+
+    def _build_context_path(self, context):
+        path = os.path.join(self._base_dir, *context)
+        os.makedirs(path, exist_ok=True)
+        return path
+
+    def _download_url_content(self, url, full_path):
+        req = requests.get(url, headers=UrlCache.HEADERS)
+        with open(full_path, 'wb') as f:
+            f.write(req.content)
+
+
+class CustomEmojiMapper:
+
+    # hopefully avoid collisions with font awesome, mpv font, openmoji and others
+    PRIVATE_RANGE = range(0xe400, 0xeeff)
+
+    def __init__(self):
+        self._image_cache = UrlCache(os.path.join(SCRIPT_PATH, 'image_cache'))
+        self._url_by_emoji = self._load_mapped_emoji()
+        self._emoji_by_url = {self._url_by_emoji[emoji]: emoji for emoji in self._url_by_emoji}
+        self._codepoints = iter(CustomEmojiMapper.PRIVATE_RANGE)
+
+    def get_mapping(self, url):
+        if url in self._emoji_by_url:
+            return self._emoji_by_url[url]
+        return self._generate_mapping(url)
+
+    def _generate_mapping(self, url):
+        while True:
+            codepoint = str(next(self._codepoints))
+            if codepoint not in self._url_by_emoji:
+                break
+        self._image_cache.ensure(['emoji'], url)
+        self._url_by_emoji[codepoint] = url
+        self._emoji_by_url[url] = codepoint
+        self._save_mapped_emoji()
+        return codepoint
+
+    def _load_mapped_emoji(self):
+        path = self._get_mapped_emoji_path()
+        if not os.path.isfile(path):
+            return {}
+        with open(path) as f:
+            return json.loads(f.read())
+
+    def _save_mapped_emoji(self):
+        path = self._get_mapped_emoji_path()
+        with open(path, 'w') as f:
+            f.write(json.dumps(self._url_by_emoji))
+
+    def _get_mapped_emoji_path(self):
+        return os.path.join(SCRIPT_PATH, 'mapped_emoji.json')
+
+
 class YoutubeLiveChatReplayParser:
+    def __init__(self):
+        self._custom_emoji_mapper = CustomEmojiMapper()
+
     def parse_messages(self, input_buffer):
         for line in input_buffer:
             yield from self._parse_replay_chat_item_action(json.loads(line))
@@ -290,9 +373,13 @@ class YoutubeLiveChatReplayParser:
             if 'text' in run:
                 return run['text']
             if 'emoji' in run:
-                # todo download and embed image
-                emoji_shortcuts = sorted(run['emoji']['shortcuts'], key=lambda s: (s.startswith(':_') + 1) * len(s))
-                return emoji_shortcuts[0] if len(emoji_shortcuts) > 0 else ''
+                best_thumbnail = None
+                for thumbnail in run['emoji']['image']['thumbnails']:
+                    if best_thumbnail is None:
+                        best_thumbnail = thumbnail
+                    elif best_thumbnail['width'] < thumbnail['width']:
+                        best_thumbnail = thumbnail
+                return chr(int(self._custom_emoji_mapper.get_mapping(best_thumbnail['url'])))
         return ''.join(map(map_run, data['runs']))
 
     def _parse_badge_types(self, data):

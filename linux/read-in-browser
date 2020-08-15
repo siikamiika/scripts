@@ -1,4 +1,5 @@
 #!/usr/local/bin/py
+# vim: ft=python
 
 # Concatenate a directory (of images) into .index.html and open it in your browser.
 

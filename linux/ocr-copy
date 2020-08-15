@@ -1,5 +1,5 @@
 #!/usr/local/bin/py
-
+# vim: ft=python
 import os
 import sys
 import time

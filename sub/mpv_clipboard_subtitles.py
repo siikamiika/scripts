@@ -1,4 +1,4 @@
-#!/usr/local/bin/py
+#!/usr/bin/env python3
 
 import pyperclip
 from tornado import websocket, web, ioloop

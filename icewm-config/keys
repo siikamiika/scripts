@@ -34,23 +34,23 @@ key "Super+Ctrl+v"     clipboard_tool primary_to_clipboard
 key "Super+Ctrl+i"     clipboard_tool clipboard_to_primary
 
 # move windows
-# key "Super+Shift+h" /home/siikamiika/.icewm/scripts/move-active -80 0
-# key "Super+Shift+j" /home/siikamiika/.icewm/scripts/move-active 0 80
-# key "Super+Shift+k" /home/siikamiika/.icewm/scripts/move-active 0 -80
-# key "Super+Shift+l" /home/siikamiika/.icewm/scripts/move-active 80 0
+key "Super+Shift+h" /home/siikamiika/.icewm/scripts/move-active -80 0
+key "Super+Shift+j" /home/siikamiika/.icewm/scripts/move-active 0 80
+key "Super+Shift+k" /home/siikamiika/.icewm/scripts/move-active 0 -80
+key "Super+Shift+l" /home/siikamiika/.icewm/scripts/move-active 80 0
 # resize windows
-# key "Super+Ctrl+h" /home/siikamiika/.icewm/scripts/resize-active -80 0
-# key "Super+Ctrl+j" /home/siikamiika/.icewm/scripts/resize-active 0 80
-# key "Super+Ctrl+k" /home/siikamiika/.icewm/scripts/resize-active 0 -80
-# key "Super+Ctrl+l" /home/siikamiika/.icewm/scripts/resize-active 80 0
+key "Super+Ctrl+h" /home/siikamiika/.icewm/scripts/resize-active -80 0
+key "Super+Ctrl+j" /home/siikamiika/.icewm/scripts/resize-active 0 80
+key "Super+Ctrl+k" /home/siikamiika/.icewm/scripts/resize-active 0 -80
+key "Super+Ctrl+l" /home/siikamiika/.icewm/scripts/resize-active 80 0
 
 # change resolution
 key "Super+Ctrl+minus" xrandr --output Virtual-1 --mode 2560x1440_60.00
 key "Super+Ctrl+equal" xrandr --output Virtual-1 --mode 1440x900
 
 # keyboard layout
-key "Alt+Shift+1" setxkbmap us
-key "Alt+Shift+4" setxkbmap fi
+# key "Alt+Shift+1" setxkbmap us
+# key "Alt+Shift+4" setxkbmap fi
 
 # "Multimedia key" bindings for Xorg. Gather the keycodes of your
 # advanced function keys by watching the output of the xev command whilest

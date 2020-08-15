@@ -1,4 +1,4 @@
-#!/usr/local/bin/py
+#!/usr/bin/env python3
 
 from subprocess import Popen, PIPE, call
 import time

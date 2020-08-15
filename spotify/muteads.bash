@@ -16,6 +16,8 @@ while IFS= read -r window_id; do
         continue
     elif [[ "$title" == *"Advertisement"* ]]; then
         mute=1
+    elif [[ "$title" == *"Spotify"* ]]; then
+        mute=1
     fi
     # TODO fix copypaste
     muted_inputs=$(

@@ -1,4 +1,4 @@
-#!/usr/local/bin/py
+#!/usr/bin/env python3
 from sys import argv
 from subprocess import call
 import re
@@ -76,6 +76,16 @@ def get_prefix(number, binary=False):
     return (*prefix, prefix_index * 3), prefix_size
 
 def notify_number_representations(number, base):
+    if base is None:
+        bases = []
+        for base in NUM_PATTERN:
+            try:
+                sanitize(number, base)
+                bases.append(base)
+            except:
+                pass
+        for base in bases:
+            notify_number_representations(number, base)
     try:
         number = expand_prefix(number, base)
     except:
@@ -108,7 +118,8 @@ def notify_number_representations(number, base):
     ])])
 
 def main():
-    notify_number_representations(pyperclip.paste(primary=True), argv[1])
+    base = argv[1] if len(argv) > 1 else None
+    notify_number_representations(pyperclip.paste(primary=True), base)
 
 if __name__ == '__main__':
     main()

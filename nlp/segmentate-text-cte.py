@@ -6,13 +6,18 @@ import statistics
 
 from lib import WordCountTrieSqlite
 
+# database max depth is 20 characters currently
 PHRASE_LIMIT = 10
 
 def segmentate(phrase, trie):
     segments = []
     remaining = phrase
+    pivot = trie
     while remaining:
-        segment_at = trie.phrase_segment(remaining[:PHRASE_LIMIT])
+        # use previous segment as context if possible
+        if len(segments) > 0:
+            pivot = trie.find(segments[-1]) or trie
+        segment_at = pivot.phrase_segment(remaining[:PHRASE_LIMIT])
         segments.append(remaining[:segment_at])
         remaining = remaining[segment_at:]
     return segments

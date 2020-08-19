@@ -1,0 +1,3 @@
+- Use reverse trie for something
+- Speed up database inserts with recursive triggers or something
+- Find new words from corpus (filter found words using a dictionary)

@@ -20,11 +20,12 @@ def segmentate(phrase, trie):
         segment_at = pivot.phrase_segment(remaining[:PHRASE_LIMIT])
         segments.append(remaining[:segment_at])
         remaining = remaining[segment_at:]
+    assert ''.join(segments) == phrase
     return segments
 
 def main():
     db_filename = sys.argv[1]
-    phrases = sys.argv[3:]
+    phrases = sys.argv[2:]
 
     trie = WordCountTrieSqlite(db_filename)
     if not trie.load():

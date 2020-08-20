@@ -17,13 +17,47 @@ class WordCountTrieSqlite:
             self._root = root
 
     def add(self, string):
-        #  0   1          2     3
-        # (id, parent_id, char, count)
-        if len(string) == 0: return
-        pivot = self._root
-        for char in string:
-            pivot = self._get_child(pivot[0], char) or self._create_child(pivot[0], char)
-        self._increment_wordcount(pivot[0])
+        self._run_sql(
+            '''
+            WITH RECURSIVE suffix_path (id, parent_id, char, count, depth, max_id, updated) AS (
+                SELECT
+                    wt.id,
+                    wt.parent_id,
+                    wt.char,
+                    wt.count,
+                    0 AS depth,
+                    (SELECT MAX(id) FROM wordcount_trie) AS max_id,
+                    FALSE AS updated
+                FROM wordcount_trie AS wt
+                WHERE id = :root_id
+
+                UNION ALL
+
+                SELECT
+                    COALESCE(wt.id, s.max_id + 1) AS id,
+                    s.id AS parent_id,
+                    SUBSTR(:string, s.depth + 1, 1) AS char,
+                    (
+                        COALESCE(wt.count, 0)
+                        + (CASE WHEN s.depth = LENGTH(:string) - 1 THEN 1 ELSE 0 END)
+                    ) AS count,
+                    s.depth + 1 AS depth,
+                    COALESCE(MAX(wt.id, s.max_id), s.max_id + 1) AS max_id,
+                    (wt.id IS NULL OR s.depth = LENGTH(:string) - 1) AS updated
+                FROM suffix_path AS s
+                LEFT JOIN wordcount_trie AS wt ON (
+                    s.id = wt.parent_id
+                    AND wt.char = SUBSTR(:string, s.depth + 1, 1)
+                )
+                WHERE s.depth < LENGTH(:string)
+            )
+            REPLACE INTO wordcount_trie
+            SELECT id, parent_id, char, count
+            FROM suffix_path
+            WHERE updated
+            ''',
+            {'root_id': self._root[0], 'string': string}
+        )
 
     def find(self, string):
         pivot = self._root
@@ -32,23 +66,6 @@ class WordCountTrieSqlite:
             if pivot is None:
                 return None
         return self._from_root(pivot)
-
-    def count(self):
-        return self._root[3]
-
-    def deduped_suffixes(self, min_length=None, max_length=None):
-        prev_suffix = None
-        prev_word_count = None
-        word_count = None
-        for suffix, word_count in self.suffixes(min_length, max_length):
-            if prev_suffix is None:
-                prev_suffix, prev_word_count = suffix, word_count
-                continue
-            if prev_word_count != word_count:
-                yield prev_suffix, prev_word_count
-            prev_suffix, prev_word_count = suffix, word_count
-        if prev_word_count is not None:
-            yield prev_suffix, prev_word_count
 
     def suffixes(self, min_length=None, max_length=None):
         # depth first
@@ -70,51 +87,21 @@ class WordCountTrieSqlite:
                 stack.pop()
                 word.pop()
 
-    def suffixes_cte_test(self, min_length=None, max_length=None):
-        if (min_length is not None and min_length < 1) or (max_length is not None and max_length < 1):
-            raise Exception('Out of range: (min_length={}, max_length={})'.format(min_length, max_length))
-
-        return self._run_sql(
-            '''
-            WITH RECURSIVE suffixes (id, parent_id, suffix, count, depth) AS (
-                SELECT wt.id, wt.parent_id, '' AS suffix, wt.count, 0 AS depth
-                FROM wordcount_trie AS wt
-                WHERE id = ? -- root id
-
-                UNION ALL
-
-                SELECT wt.id, wt.parent_id, (s.suffix || wt.char) AS suffix, wt.count, s.depth + 1
-                FROM suffixes AS s, wordcount_trie AS wt
-                WHERE wt.parent_id = s.id
-            )
-            SELECT s.suffix, s.count
-            FROM suffixes AS s
-            WHERE s.count > 0
-                AND COALESCE(s.depth >= COALESCE(?, 1), TRUE)
-                AND COALESCE(s.depth <= ?, TRUE)
-            ''',
-            [
-                self._root[0],
-                min_length,
-                max_length
-            ]
-        )
-
     def phrase_segment(self, phrase):
         result = self._run_sql(
             f'''
             WITH RECURSIVE substr_suffixes (id, parent_id, suffix, count, depth) AS (
                 SELECT wt.*, 0 AS depth
                 FROM wordcount_trie AS wt
-                WHERE id = ? -- root id
+                WHERE id = :root_id
 
                 UNION ALL
 
                 SELECT wt.*, s.depth + 1
                 FROM substr_suffixes AS s, wordcount_trie AS wt
                 WHERE wt.parent_id = s.id
-                    AND s.depth < ?
-                    AND wt.char = SUBSTR(?, s.depth + 1, 1)
+                    AND s.depth < LENGTH(:string)
+                    AND wt.char = SUBSTR(:string, s.depth + 1, 1)
             )
             SELECT
                 ss.depth,
@@ -130,7 +117,7 @@ class WordCountTrieSqlite:
             ORDER BY relative_count DESC
             LIMIT 1
             ''',
-            [self._root[0], len(phrase), phrase]
+            {'root_id': self._root[0], 'string': phrase}
         )
         if len(result) == 0:
             return 1
@@ -157,7 +144,7 @@ class WordCountTrieSqlite:
     def _ensure_table(self):
         self._run_sql('''
             CREATE TABLE IF NOT EXISTS wordcount_trie (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id INTEGER PRIMARY KEY,
                 parent_id INTEGER,
                 char TEXT,
                 count INTEGER DEFAULT 0
@@ -166,7 +153,7 @@ class WordCountTrieSqlite:
         self._run_sql('CREATE INDEX IF NOT EXISTS parent ON wordcount_trie (parent_id)')
         self._run_sql('CREATE UNIQUE INDEX IF NOT EXISTS char_parent ON wordcount_trie (char, parent_id)')
         if len(self._run_sql('SELECT * FROM wordcount_trie WHERE id = 1')) == 0:
-            self._run_sql('INSERT INTO wordcount_trie DEFAULT VALUES') # (id=1, parent_id=None, char=None, count=0)
+            self._run_sql('INSERT INTO wordcount_trie (id, parent_id, char, count) VALUES (1, NULL, NULL, 0)')
 
     def _run_sql(self, statement, params=None):
         if params is not None:
@@ -186,13 +173,6 @@ class WordCountTrieSqlite:
 
     def _get_children(self, parent_id):
         return self._run_sql('SELECT * FROM wordcount_trie WHERE parent_id = ?', [parent_id])
-
-    def _create_child(self, parent_id, char):
-        self._run_sql('INSERT INTO wordcount_trie (parent_id, char) VALUES (?, ?)', [parent_id, char])
-        return (self._cursor.lastrowid, parent_id, char, 0)
-
-    def _increment_wordcount(self, id):
-        self._run_sql('UPDATE wordcount_trie SET count = count + 1 WHERE id = ?', [id])
 
     def __iter__(self):
         yield from self.suffixes()

@@ -60,6 +60,32 @@ class WordCountTrieSqlite:
             {'root_id': self._root[0], 'string': string}
         )
 
+    def _todo_substrings(self, string):
+        return self._run_sql(
+            '''
+            WITH RECURSIVE
+            substrings (substring, i, l) AS (
+                SELECT SUBSTR(:string, 1, 1), 1, 1
+
+                UNION ALL
+
+                SELECT
+                    SUBSTR(
+                        :string,
+                        CASE WHEN i + l = LENGTH(:string) + 1 THEN i + 1 ELSE i END,
+                        CASE WHEN i + l = LENGTH(:string) + 1 THEN 1 ELSE l + 1 END
+                    ),
+                    CASE WHEN i + l = LENGTH(:string) + 1 THEN i + 1 ELSE i END AS i,
+                    CASE WHEN i + l = LENGTH(:string) + 1 THEN 1 ELSE l + 1 END AS l
+                FROM substrings
+                WHERE i < LENGTH(:string)
+                ORDER BY i, l
+            )
+            SELECT substring FROM substrings
+            ''',
+            {'string': string}
+        )
+
     def find(self, string):
         pivot = self._root
         for char in string:

@@ -19,7 +19,8 @@ class WordCountTrieSqlite:
     def add(self, string):
         self._run_sql(
             '''
-            WITH RECURSIVE suffix_path (id, parent_id, char, count, depth, max_id, updated) AS (
+            WITH RECURSIVE
+            suffix_path (id, parent_id, char, count, depth, max_id, updated) AS (
                 SELECT
                     wt.id,
                     wt.parent_id,
@@ -34,22 +35,22 @@ class WordCountTrieSqlite:
                 UNION ALL
 
                 SELECT
-                    COALESCE(wt.id, s.max_id + 1) AS id,
-                    s.id AS parent_id,
-                    SUBSTR(:string, s.depth + 1, 1) AS char,
+                    COALESCE(wt.id, sp.max_id + 1) AS id,
+                    sp.id AS parent_id,
+                    SUBSTR(:string, sp.depth + 1, 1) AS char,
                     (
                         COALESCE(wt.count, 0)
-                        + (CASE WHEN s.depth = LENGTH(:string) - 1 THEN 1 ELSE 0 END)
+                        + (CASE WHEN sp.depth = LENGTH(:string) - 1 THEN 1 ELSE 0 END)
                     ) AS count,
-                    s.depth + 1 AS depth,
-                    COALESCE(MAX(wt.id, s.max_id), s.max_id + 1) AS max_id,
-                    (wt.id IS NULL OR s.depth = LENGTH(:string) - 1) AS updated
-                FROM suffix_path AS s
+                    sp.depth + 1 AS depth,
+                    COALESCE(MAX(wt.id, sp.max_id), sp.max_id + 1) AS max_id,
+                    (wt.id IS NULL OR sp.depth = LENGTH(:string) - 1) AS updated
+                FROM suffix_path AS sp
                 LEFT JOIN wordcount_trie AS wt ON (
-                    s.id = wt.parent_id
-                    AND wt.char = SUBSTR(:string, s.depth + 1, 1)
+                    sp.id = wt.parent_id
+                    AND wt.char = SUBSTR(:string, sp.depth + 1, 1)
                 )
-                WHERE s.depth < LENGTH(:string)
+                WHERE sp.depth < LENGTH(:string)
             )
             REPLACE INTO wordcount_trie
             SELECT id, parent_id, char, count

@@ -25,7 +25,7 @@ def generate_text(trie, first_chars):
                 has_repeating_pattern = True
                 break
 
-        if char is None or has_repeating_pattern or len(string) > 60:
+        if char is None or has_repeating_pattern:
             next_first_chars |= set(string)
             for i in range(1, 4):
                 next_first_chars |= set(string[j:j+i] for j in range(0, len(string) - i + 1))

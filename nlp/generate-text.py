@@ -6,17 +6,31 @@ import random
 from lib import WordCountTrieSqlite
 
 def generate_text(trie, first_chars):
-    chars = set()
+    next_first_chars = set()
     segments = [first_chars]
     pivot = trie
     while True:
-        pivot = trie.find(''.join(segments[-5:])) or trie
+        pivot = trie.find(''.join(segments[-6:])) or trie
         char = pivot.generate_char()
         string = ''.join(segments)
-        if char is None or (len(string) > 3 and len(set(string[-3:])) == 1) or len(string) > 50:
-            chars |= set(string)
+
+        has_repeating_pattern = False
+        i = 0
+        while True:
+            i += 1
+            chunk_len = 3 * i
+            if len(string) <= chunk_len:
+                break
+            if len(set(string[-chunk_len:])) <= i:
+                has_repeating_pattern = True
+                break
+
+        if char is None or has_repeating_pattern or len(string) > 60:
+            next_first_chars |= set(string)
+            for i in range(1, 4):
+                next_first_chars |= set(string[j:j+i] for j in range(0, len(string) - i + 1))
             yield string
-            segments = random.sample(chars, 1)
+            segments = random.sample(next_first_chars, 1)
             pivot = trie
             continue
         segments.append(char)

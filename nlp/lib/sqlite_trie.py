@@ -150,6 +150,43 @@ class WordCountTrieSqlite:
             return 1
         return result[0][0]
 
+    def generate_char(self):
+        generated_char = self._run_sql(
+            '''
+            WITH RECURSIVE generated_char (id, parent_id, suffix, count, depth) AS (
+                SELECT wt.*, 0 AS depth
+                FROM wordcount_trie AS wt
+                WHERE id = :root_id
+
+                UNION ALL
+
+                SELECT wt.*, gc.depth + 1
+                FROM generated_char AS gc, wordcount_trie AS wt
+                WHERE wt.parent_id = gc.id
+                    AND wt.char = (
+                        SELECT wt2.char
+                        FROM wordcount_trie wt2
+                        WHERE wt2.parent_id = gc.id
+                        ORDER BY (wt2.count / (
+                                SELECT AVG(wt3.count)
+                                FROM wordcount_trie wt3
+                                WHERE wt3.parent_id = wt2.parent_id
+                                    AND wt3.id != wt2.id
+                            )) DESC
+                        LIMIT 1
+                    )
+                    AND gc.depth = 0
+            )
+            SELECT *
+            FROM generated_char AS gc
+            WHERE gc.depth > 0
+            ''',
+            {'root_id': self._root[0]}
+        )
+        if len(generated_char) == 0:
+            return None
+        return generated_char[0][2]
+
     def load(self):
         if os.path.isfile(self._path):
             backup = sqlite3.connect(self._path)

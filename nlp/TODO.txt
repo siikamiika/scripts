@@ -1,3 +1,2 @@
 - Use reverse trie for something
 - Find new words from corpus (filter found words using a dictionary)
-- Use the trie to generate text

@@ -188,7 +188,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         self.y_layer_count = int(RES_Y / FONT_SIZE) - 1
         self.z_layer_to_danmaku_index = {}
         self.danmaku_layers = []
-        self._previous_timestamp = None
+        self._start_timestamp = None
+        self._previous_minutes = -1
 
     def generate(self, messages):
         yield self.ass_header
@@ -275,22 +276,18 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         })
 
     def _generate_datetime(self, timestamp, offset_msec):
-        if self._previous_timestamp is None:
-            previous_timestamp = timestamp - (offset_msec / 1000) - 60
-            self._previous_timestamp = previous_timestamp
-        else:
-            previous_timestamp = self._previous_timestamp
-        minutes_since_previous = int((timestamp - previous_timestamp) / 60)
+        if self._start_timestamp is None:
+            self._start_timestamp = timestamp - (offset_msec / 1000)
         minute_in_msec = 60 * 1000
-        for minute_offset in reversed(range(minutes_since_previous)):
-            start_time = offset_msec - (minute_offset * minute_in_msec)
-            start_time = start_time - start_time % minute_in_msec
+        new_minutes = int(offset_msec / minute_in_msec) - self._previous_minutes
+        for i in range(new_minutes):
+            start_time = (self._previous_minutes + i + 1) * minute_in_msec
             yield "Dialogue: 0,{start},{end},Datetime,,20,20,2,,{formatted_text}\n".format(**{
                 'start': self._format_time(start_time),
                 'end': self._format_time(start_time + minute_in_msec),
-                'formatted_text': self._format_datetime(timestamp),
+                'formatted_text': self._format_datetime(self._start_timestamp + start_time / 1000),
             })
-            self._previous_timestamp = timestamp # not a bug
+            self._previous_minutes += new_minutes
 
     def _format_time(self, time_msec):
         time_sec = time_msec / 1000

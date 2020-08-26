@@ -7,11 +7,14 @@ import json
 import sys
 import struct
 import hashlib
+import datetime
+import pytz
 import requests
 
 RES_X = 1280
 RES_Y = 720
 FONT_SIZE = 30
+TIMEZONE = 'Asia/Tokyo'
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -164,8 +167,8 @@ Timer: 100.0000
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Fix,{fontFamily},{fontSize},&H{alpha}FFFFFF,&H{alpha}FFFFFF,&H{alpha}000000,&H{alpha}000000,1,0,0,0,100,100,0,0,1,2,0,2,20,20,2,0
 Style: Rtl,{fontFamily},{fontSize},&H{alpha}FFFFFF,&H{alpha}FFFFFF,&H{alpha}000000,&H{alpha}000000,1,0,0,0,100,100,0,0,1,2,0,2,20,20,2,0
+Style: Datetime,{fontFamily},{datetimeFontSize},&H{alpha}FFFFFF,&H{alpha}FFFFFF,&H{alpha}000000,&H{alpha}000000,1,0,0,0,100,100,0,0,1,2,0,7,20,20,2,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -176,6 +179,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     'playResY': RES_Y,
     'fontFamily': 'Noto Sans',
     'fontSize': FONT_SIZE,
+    'datetimeFontSize': int(FONT_SIZE * 0.6),
     'alpha': '00',
 })
 
@@ -184,10 +188,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         self.y_layer_count = int(RES_Y / FONT_SIZE) - 1
         self.z_layer_to_danmaku_index = {}
         self.danmaku_layers = []
+        self._previous_timestamp = None
 
     def generate(self, messages):
         yield self.ass_header
         for message in messages:
+            if message['offset_msec'] > 0:
+                yield from self._generate_datetime(message['timestamp'], message['offset_msec'])
             yield self._generate_dialogue(message)
 
     def _generate_dialogue(self, message):
@@ -260,13 +267,30 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             'author': sanitize(author),
             'body': sanitize(body),
         })
-        return "Dialogue: {z_layer},{start},{end},{type},,20,20,2,,{formatted_text}\n".format(**{
+        return "Dialogue: {z_layer},{start},{end},Rtl,,20,20,2,,{formatted_text}\n".format(**{
             'z_layer': z_layer,
             'start': self._format_time(start_time),
             'end': self._format_time(end_time),
-            'type': 'Rtl',
             'formatted_text': ass_formatted_text,
         })
+
+    def _generate_datetime(self, timestamp, offset_msec):
+        if self._previous_timestamp is None:
+            previous_timestamp = timestamp - (offset_msec / 1000) - 60
+            self._previous_timestamp = previous_timestamp
+        else:
+            previous_timestamp = self._previous_timestamp
+        minutes_since_previous = int((timestamp - previous_timestamp) / 60)
+        minute_in_msec = 60 * 1000
+        for minute_offset in reversed(range(minutes_since_previous)):
+            start_time = offset_msec - (minute_offset * minute_in_msec)
+            start_time = start_time - start_time % minute_in_msec
+            yield "Dialogue: 0,{start},{end},Datetime,,20,20,2,,{formatted_text}\n".format(**{
+                'start': self._format_time(start_time),
+                'end': self._format_time(start_time + minute_in_msec),
+                'formatted_text': self._format_datetime(timestamp),
+            })
+            self._previous_timestamp = timestamp # not a bug
 
     def _format_time(self, time_msec):
         time_sec = time_msec / 1000
@@ -274,6 +298,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         mm = int(mm)
         hh, mm = divmod(mm, 60)
         return "{}:{:02d}:{:05.2f}".format(hh, mm, ss)
+
+    def _format_datetime(self, timestamp):
+        dt = datetime.datetime.fromtimestamp(timestamp, pytz.timezone(TIMEZONE))
+        return dt.strftime('%a %Y-%m-%d %H:%M %Z')
 
     def _estimate_width(self, text):
         length = 0
@@ -454,46 +482,49 @@ class YoutubeLiveChatReplayParser:
                 continue
             action = action['item']
 
-            body = None
-            author = None
+            body = ''
+            author = ''
             paid = None
             size = 1.0
             color = 0x00ffffff # argb
             author_color = 0xbb888888
             duration = 1.0
+            timestamp = None
             renderer = None
 
-            def update_badges(renderer):
-                nonlocal author, author_color, size, duration
+            def update_common_props(renderer):
+                nonlocal author, author_color, size, duration, timestamp, body
+                if 'timestampUsec' in renderer:
+                    timestamp = float(renderer['timestampUsec']) / 1000000
+                if 'authorName' in renderer:
+                    author = renderer['authorName']['simpleText']
                 if 'authorBadges' in renderer:
                     badge_types = self._parse_badge_types(renderer['authorBadges'])
                     author = (author + ' ' + self._badge_text(badge_types)).strip()
                     author_color = self._badge_color(badge_types)
                     size *= self._badge_size(badge_types)
                     duration *= self._badge_duration(badge_types)
+                if 'message' in renderer:
+                    body = self._transform_renderer_message(renderer['message'])
+                elif 'headerSubtext' in renderer:
+                    body = self._transform_renderer_message(renderer['headerSubtext'])
 
             if 'liveChatTextMessageRenderer' in action:
                 renderer = action['liveChatTextMessageRenderer']
-                body = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
-                author = renderer['authorName']['simpleText']
-                update_badges(renderer)
+                update_common_props(renderer)
             elif 'liveChatPaidMessageRenderer' in action:
                 renderer = action['liveChatPaidMessageRenderer']
-                body = self._transform_renderer_message(renderer['message']) if 'message' in renderer else ''
-                author = renderer['authorName']['simpleText']
+                update_common_props(renderer)
                 paid = renderer['purchaseAmountText']['simpleText']
-                update_badges(renderer)
                 size *= 1.1
                 color = (color & ~0xffffff) ^ (renderer['bodyBackgroundColor'] & 0xffffff)
                 duration *= self._color_duration(color)
             elif 'liveChatMembershipItemRenderer' in action:
                 renderer = action['liveChatMembershipItemRenderer']
-                body = self._transform_renderer_message(renderer['headerSubtext']) if 'headerSubtext' in renderer else ''
-                author = renderer['authorName']['simpleText']
-                update_badges(renderer)
+                update_common_props(renderer)
                 color = (color & ~0xffffff) ^ 0x000f9d58
 
-            if body is not None:
+            if renderer is not None:
                 yield {
                     'body': body,
                     'author': author,
@@ -502,6 +533,7 @@ class YoutubeLiveChatReplayParser:
                     'color': color,
                     'author_color': author_color,
                     'duration': duration,
+                    'timestamp': timestamp,
                     'renderer': renderer,
                     'offset_msec': offset_msec,
                 }

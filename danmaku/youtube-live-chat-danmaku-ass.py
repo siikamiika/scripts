@@ -468,6 +468,9 @@ class YoutubeLiveChatReplayParser:
         if 'videoOffsetTimeMsec' not in data:
             return
         offset_msec = int(data['videoOffsetTimeMsec'])
+        # some of these are bugged and have timestamp instead, just skip them
+        if offset_msec > 1262304000: # year 2010
+            return
         if 'actions' not in data:
             return
         data = data['actions']

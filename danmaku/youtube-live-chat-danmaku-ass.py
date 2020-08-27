@@ -14,7 +14,12 @@ import requests
 RES_X = 1280
 RES_Y = 720
 FONT_SIZE = 30
-TIMEZONE = 'Asia/Tokyo'
+TIMEZONES = [
+    'Asia/Tokyo',
+    'Europe/Helsinki',
+    'US/Eastern',
+    'US/Pacific',
+]
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -168,7 +173,7 @@ Timer: 100.0000
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Rtl,{fontFamily},{fontSize},&H{alpha}FFFFFF,&H{alpha}FFFFFF,&H{alpha}000000,&H{alpha}000000,1,0,0,0,100,100,0,0,1,2,0,2,20,20,2,0
-Style: Datetime,{fontFamily},{datetimeFontSize},&H{alpha}FFFFFF,&H{alpha}FFFFFF,&H{alpha}000000,&H{alpha}000000,1,0,0,0,100,100,0,0,1,2,0,7,20,20,2,0
+Style: Datetime,{fontFamily},{datetimeFontSize},&H{datetimeAlpha}FFFFFF,&H{datetimeAlpha}FFFFFF,&H{datetimeAlpha}000000,&H{datetimeAlpha}000000,1,0,0,0,100,100,0,0,1,2,0,7,20,20,2,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -181,6 +186,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     'fontSize': FONT_SIZE,
     'datetimeFontSize': int(FONT_SIZE * 0.6),
     'alpha': '00',
+    'datetimeAlpha': '77',
 })
 
     def __init__(self):
@@ -282,11 +288,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         new_minutes = int(offset_msec / minute_in_msec) - self._previous_minutes
         for i in range(new_minutes):
             start_time = (self._previous_minutes + i + 1) * minute_in_msec
-            yield "Dialogue: 0,{start},{end},Datetime,,20,20,2,,{formatted_text}\n".format(**{
-                'start': self._format_time(start_time),
-                'end': self._format_time(start_time + minute_in_msec),
-                'formatted_text': self._format_datetime(self._start_timestamp + start_time / 1000),
-            })
+            for timezone in TIMEZONES:
+                yield "Dialogue: 999,{start},{end},Datetime,,20,20,2,,{formatted_text}\n".format(**{
+                    'start': self._format_time(start_time),
+                    'end': self._format_time(start_time + minute_in_msec),
+                    'formatted_text': self._format_datetime(self._start_timestamp + start_time / 1000, timezone),
+                })
             self._previous_minutes += new_minutes
 
     def _format_time(self, time_msec):
@@ -296,8 +303,8 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         hh, mm = divmod(mm, 60)
         return "{}:{:02d}:{:05.2f}".format(hh, mm, ss)
 
-    def _format_datetime(self, timestamp):
-        dt = datetime.datetime.fromtimestamp(timestamp, pytz.timezone(TIMEZONE))
+    def _format_datetime(self, timestamp, timezone):
+        dt = datetime.datetime.fromtimestamp(timestamp, pytz.timezone(timezone))
         return dt.strftime('%a %Y-%m-%d %H:%M %Z')
 
     def _estimate_width(self, text):

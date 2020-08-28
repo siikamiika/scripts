@@ -1,2 +1,7 @@
+- Use postgresql
 - Use reverse trie for something
+    - find more suitable root when generating text based on previous characters
+    - something with segmentation?
 - Find new words from corpus (filter found words using a dictionary)
+    - feed the training text to the model and pick segmentated words
+- Cache n-gram probabilities

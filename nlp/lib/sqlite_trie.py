@@ -137,18 +137,17 @@ class WordCountTrieSqlite:
                     SELECT AVG(wt.count)
                     FROM wordcount_trie wt
                     WHERE wt.parent_id = ss.parent_id
-                        AND wt.id != ss.id
                 )) AS relative_count
             FROM substr_suffixes AS ss
             WHERE ss.depth > 0
             ORDER BY relative_count DESC
-            LIMIT 1
+            LIMIT 5
             ''',
             {'root_id': self._root[0], 'string': phrase}
         )
         if len(result) == 0:
-            return 1
-        return result[0][0]
+            return [(1, 1.0)]
+        return [(r[0], r[2]) for r in result]
 
     def generate_char(self):
         generated_char = self._run_sql(

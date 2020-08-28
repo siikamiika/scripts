@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import sys
-import json
-import statistics
 
 from lib import WordCountTrieSqlite
 
@@ -12,13 +10,11 @@ PHRASE_LIMIT = 10
 def segmentate(phrase, trie):
     segments = []
     remaining = phrase
-    pivot = trie
     while remaining:
-        # use previous segment as context if possible
-        if len(segments) > 0:
-            pivot = trie.find(segments[-1]) or trie
-        segment_at = pivot.phrase_segment(remaining[:PHRASE_LIMIT])
+        segment_results = trie.phrase_segment(remaining[:PHRASE_LIMIT])
+        segment_at, score = segment_results[0]
         segments.append(remaining[:segment_at])
+        print([(remaining[:segment_at2], score2) for segment_at2, score2 in segment_results])
         remaining = remaining[segment_at:]
     assert ''.join(segments) == phrase
     return segments
@@ -37,6 +33,7 @@ def main():
 
     for phrase in phrases:
         print(segmentate(phrase, trie))
+        print('-------------------------------------------------------------------')
 
 if __name__ == '__main__':
     main()

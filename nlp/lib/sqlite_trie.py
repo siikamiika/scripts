@@ -9,7 +9,7 @@ class WordCountTrieSqlite:
         if conn is None:
             self._conn = sqlite3.connect(self._path, isolation_level='DEFERRED')
             self._cursor = self._conn.cursor()
-            self._ensure_table()
+            self._prepare_database()
             self._root = self._get_initial_root()
         else:
             self._conn = conn
@@ -59,6 +59,28 @@ class WordCountTrieSqlite:
             ''',
             {'root_id': self._root[0], 'string': string}
         )
+
+    def add_source(self, key):
+        self._run_sql(
+            '''
+            INSERT INTO imported_sources
+                (key)
+            values (:key)
+            ''',
+            {'key': key}
+        )
+
+    def has_source(self, key):
+        return bool(self._run_sql(
+            '''
+            SELECT EXISTS(
+                SELECT *
+                FROM imported_sources
+                WHERE key = :key
+            )
+            ''',
+            {'key': key}
+        )[0][0])
 
     def _todo_substrings(self, string):
         return self._run_sql(
@@ -189,7 +211,8 @@ class WordCountTrieSqlite:
     def _from_root(self, root):
         return WordCountTrieSqlite(self._path, self._conn, self._cursor, root)
 
-    def _ensure_table(self):
+    def _prepare_database(self):
+        # trie table
         self._run_sql('''
             CREATE TABLE IF NOT EXISTS wordcount_trie (
                 id INTEGER PRIMARY KEY,
@@ -202,6 +225,9 @@ class WordCountTrieSqlite:
         self._run_sql('CREATE UNIQUE INDEX IF NOT EXISTS char_parent ON wordcount_trie (char, parent_id)')
         if len(self._run_sql('SELECT * FROM wordcount_trie WHERE id = 1')) == 0:
             self._run_sql('INSERT INTO wordcount_trie (id, parent_id, char, count) VALUES (1, NULL, NULL, 0)')
+        # table for tracking imported sources
+        self._run_sql('CREATE TABLE IF NOT EXISTS imported_sources (key TEXT PRIMARY KEY)')
+        # trade safety for speed
         self._run_sql('PRAGMA synchronous = OFF')
         self._run_sql('PRAGMA journal_mode = OFF')
 

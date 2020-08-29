@@ -24,8 +24,6 @@ def main():
     phrases = sys.argv[2:]
 
     trie = WordCountTrieSqlite(db_filename)
-    if not trie.load():
-        raise Exception('No database! Populate it first')
     # TODO explore opportunities with the reverse trie
 
     if len(phrases) == 0:

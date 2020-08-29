@@ -16,11 +16,9 @@ def count_substrings_trie(string, trie):
 
 def generate_trie(strings, output_filename):
     trie = WordCountTrieSqlite(output_filename)
-    if not trie.load():
-        for i, string in enumerate(strings):
-            count_substrings_trie(string.strip(), trie)
-            print(i)
-        trie.persist()
+    for i, string in enumerate(strings):
+        count_substrings_trie(string.strip(), trie)
+        print(i)
 
 def main():
     input_filename = sys.argv[1]

@@ -10,7 +10,7 @@ def generate_text(trie, first_chars):
     segments = [first_chars]
     pivot = trie
     while True:
-        pivot = trie.find(''.join(segments[-6:])) or trie
+        pivot = trie.find(''.join(segments[-5:])) or trie
         char = pivot.generate_char()
         string = ''.join(segments)
 
@@ -40,8 +40,6 @@ def main():
     first_chars = sys.argv[2] if len(sys.argv) > 2 else None
 
     trie = WordCountTrieSqlite(db_filename)
-    if not trie.load():
-        raise Exception('No database! Populate it first')
 
     for text in generate_text(trie, first_chars):
         print(text)

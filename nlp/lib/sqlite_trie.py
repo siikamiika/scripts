@@ -7,7 +7,7 @@ class WordCountTrieSqlite:
     def __init__(self, path, conn=None, cursor=None, root=None):
         self._path = path
         if conn is None:
-            self._conn = sqlite3.connect(':memory:')
+            self._conn = sqlite3.connect(self._path, isolation_level='DEFERRED')
             self._cursor = self._conn.cursor()
             self._ensure_table()
             self._root = self._get_initial_root()
@@ -186,21 +186,6 @@ class WordCountTrieSqlite:
             return None
         return generated_char[0][2]
 
-    def load(self):
-        if os.path.isfile(self._path):
-            backup = sqlite3.connect(self._path)
-            with backup:
-                backup.backup(self._conn)
-            backup.close()
-            return True
-        return False
-
-    def persist(self):
-        backup = sqlite3.connect(self._path)
-        with backup:
-            self._conn.backup(backup)
-        backup.close()
-
     def _from_root(self, root):
         return WordCountTrieSqlite(self._path, self._conn, self._cursor, root)
 
@@ -217,6 +202,8 @@ class WordCountTrieSqlite:
         self._run_sql('CREATE UNIQUE INDEX IF NOT EXISTS char_parent ON wordcount_trie (char, parent_id)')
         if len(self._run_sql('SELECT * FROM wordcount_trie WHERE id = 1')) == 0:
             self._run_sql('INSERT INTO wordcount_trie (id, parent_id, char, count) VALUES (1, NULL, NULL, 0)')
+        self._run_sql('PRAGMA synchronous = OFF')
+        self._run_sql('PRAGMA journal_mode = OFF')
 
     def _run_sql(self, statement, params=None):
         if params is not None:

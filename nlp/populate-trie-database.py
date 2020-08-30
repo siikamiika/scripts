@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-import re
 import pathlib
 import subprocess
 import json
-import io
 
 from lib import WordCountTrieSqlite
 
@@ -31,13 +29,14 @@ def main():
                 if trie.has_source(source_path):
                     print('{} already added, skipping'.format(source_path))
                     continue
-                print('\n' + source_path)
+                print(source_path)
                 trie.add_source(source_path)
-                extractor = subprocess.Popen(desc['extractor'], stdin=open(source_path), stdout=subprocess.PIPE)
-                for text in io.TextIOWrapper(extractor.stdout, encoding='utf-8'):
+                extractor = subprocess.Popen(desc['extractor'], stdin=open(source_path), stdout=subprocess.PIPE, encoding='utf-8')
+                for text in extractor.stdout:
                     count_substrings_trie(text.strip(), trie)
                     total_line_count += 1
                     print('\r{}'.format(total_line_count), end='')
+                print()
         else:
             raise Exception('unknown mode: ' + desc['mode'])
 

@@ -32,7 +32,7 @@ def _get_srt_line():
     return f
 get_srt_line = _get_srt_line()
 
-def interpolate_lines(lines):
+def interpolate_lines_range(lines):
     start_time = lines[0].value.time or lines[0].prev.value.end_time
     end_time = lines[-1].value.time
     length = end_time - start_time
@@ -54,49 +54,33 @@ def interpolate_lines(lines):
             end_time2 = start_time + length * (cur_chars / total_chars)
             yield Line(
                 node.value.text,
-                node.prev.value.text,
-                node.next.value.text,
+                node.prev.value.text if node.prev else None,
+                node.next.value.text if node.next else None,
                 start_time2,
                 end_time2
             )
 
     return gen_lines(), ext_end_time
 
-def linked_iter(iterable, transform=lambda v: v):
+def linked_iter(iterable):
     class Node:
         def __init__(self, value, prev_node=None, next_node=None):
             self.value = value
-            self._prev = prev_node
-            self._next = next_node
+            self.prev = prev_node
+            self.next = next_node
 
         def __repr__(self):
             prev_value = self.prev.value if self.prev else None
             next_value = self.next.value if self.next else None
             return 'Node<value={}, prev=Node<value={}>, next=Node<value={}>>'.format(self.value, prev_value, next_value)
 
-        @property
-        def prev(self):
-            return self._prev or Node(transform(None))
-
-        @property
-        def next(self):
-            return self._next or Node(transform(None))
-
-        @prev.setter
-        def prev(self, val):
-            self._prev = val
-
-        @next.setter
-        def next(self, val):
-            self._next = val
-
     iterable = iter(iterable)
     try:
-        node_prev = Node(transform(next(iterable)))
+        node_prev = Node(next(iterable))
     except StopIteration:
         return
     try:
-        node_cur = Node(transform(next(iterable)), prev_node=node_prev)
+        node_cur = Node(next(iterable), prev_node=node_prev)
         node_prev.next = node_cur
     except StopIteration:
         yield node_prev
@@ -104,7 +88,7 @@ def linked_iter(iterable, transform=lambda v: v):
     yield node_prev
     while True:
         try:
-            node_next = Node(transform(next(iterable)), prev_node=node_cur)
+            node_next = Node(next(iterable), prev_node=node_cur)
             node_cur.next = node_next
             yield node_cur
             node_prev = node_cur
@@ -140,19 +124,28 @@ def parse_json_or_raw(line):
     except json.decoder.JSONDecodeError:
         return TimedText(line.strip(), None)
 
-def lines_to_srt(lines):
+def parse_lines(lines):
+    return list(map(parse_json_or_raw, lines))
+
+def interpolate_lines(lines):
     buf = []
     first = True
-    for node in linked_iter(lines, parse_json_or_raw):
+    for node in linked_iter(lines):
         buf.append(node)
         if not first and node.value.time is not None:
-            lines, node.value.end_time = interpolate_lines(buf)
-            yield from map(get_srt_line, lines)
+            lines, node.value.end_time = interpolate_lines_range(buf)
+            yield from lines
             buf = []
             continue
         first = False
     if len(buf) > 0:
         raise Exception('Extrapolation not supported')
 
-for l in lines_to_srt(sys.stdin):
-    print(l)
+def main():
+    input_buffer = open(sys.argv[1]) if len(sys.argv) > 1 else sys.stdin
+    output_buffer = open(sys.argv[2]) if len(sys.argv) > 2 else sys.stdout
+    for line in map(get_srt_line, interpolate_lines(parse_lines(input_buffer))):
+        print(line, file=output_buffer)
+
+if __name__ == '__main__':
+    main()

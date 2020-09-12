@@ -3,13 +3,26 @@
 import sys
 import json
 import re
+import copy
 
-def format_srt_time(seconds):
+class TimedText:
+    def __init__(self, text, time, end_time=None):
+        self.text = text
+        self.time = time
+        self.end_time = end_time
+
+    def __repr__(self):
+        return 'TimedText<text={} time={} end_time={}>'.format(self.text, self.time, self.end_time)
+
+    def __copy__(self):
+        return TimedText(self.text, self.time, self.end_time)
+
+def format_time(seconds, decimal_separator=','):
     ss, frac = divmod(seconds, 1)
     ms = min(int(frac * 1000), 999)
     mm, ss = divmod(ss, 60)
     hh, mm = divmod(mm, 60)
-    return '{h:02.0f}:{m:02.0f}:{s:02.0f},{ms:03.0f}'.format(h=hh, m=mm, s=ss, ms=ms)
+    return '{h:02.0f}:{m:02.0f}:{s:02.0f}{sep}{ms:03.0f}'.format(h=hh, m=mm, s=ss, ms=ms, sep=decimal_separator)
 
 def _get_srt_line():
     counter = 0
@@ -24,7 +37,7 @@ def _get_srt_line():
 <font color="#888888">{next_text}</font>
 '''.format(
     counter=counter,
-    time=format_srt_time(line.start_time) + ' --> ' + format_srt_time(line.end_time),
+    time=format_time(line.start_time) + ' --> ' + format_time(line.end_time),
     prev_text=line.prev_text or '',
     text=line.text,
     next_text=line.next_text or '',
@@ -47,6 +60,8 @@ def interpolate_lines_range(lines):
                 self.next_text = next_text
                 self.start_time = start_time
                 self.end_time = end_time
+            def __repr__(self):
+                return 'Line<text={} start_time={} end_time={}>'.format(self.text, self.start_time, self.end_time)
         cur_chars = 0
         for node in lines:
             start_time2 = start_time + length * (cur_chars / total_chars)
@@ -107,15 +122,6 @@ def parse_seconds(time_str):
     )
 
 def parse_json_or_raw(line):
-    class TimedText:
-        def __init__(self, text, time_str):
-            self.text = text
-            self.time = time_str
-            self.end_time = None
-
-        def __repr__(self):
-            return 'TimedText<text={} time={} end_time={}>'.format(self.text, self.time, self.end_time)
-
     if line is None:
         return TimedText(None, None)
     try:
@@ -130,7 +136,7 @@ def parse_lines(lines):
 def interpolate_lines(lines):
     buf = []
     first = True
-    for node in linked_iter(lines):
+    for node in linked_iter(copy.deepcopy(lines)):
         buf.append(node)
         if not first and node.value.time is not None:
             lines, node.value.end_time = interpolate_lines_range(buf)
@@ -141,11 +147,72 @@ def interpolate_lines(lines):
     if len(buf) > 0:
         raise Exception('Extrapolation not supported')
 
+def shift_line(input_lines, time_sec, offset):
+    if offset == 0:
+        return input_lines
+
+    if len(input_lines) < 3:
+        raise Exception('Input too short')
+
+    shift_from = 0
+    shift_to = 0
+    debug = None
+    for i, line in enumerate(interpolate_lines(copy.deepcopy(input_lines))):
+        if line.start_time > time_sec:
+            break
+        if line.start_time <= time_sec < line.end_time:
+            debug = line
+            shift_from = i
+            shift_to = max(0, i + offset)
+            break
+    else:
+        shift_from = max(1, len(input_lines) - 2)
+        shift_to = len(input_lines) - 1
+    if shift_to is None:
+        return input_lines
+
+    output_lines = []
+    range_min = min(shift_to, shift_from)
+    range_max = max(shift_to, shift_from)
+    for i, line in enumerate(input_lines):
+        if i == shift_to and i != 1 and i != len(input_lines) - 2:
+            line = TimedText(line.text, time_sec)
+        elif i == 0 or i == len(input_lines) - 1:
+            pass
+        elif range_min - 1 <= i <= range_max + 1:
+            line = TimedText(line.text, None)
+        output_lines.append(line)
+    return output_lines
+
+def run_mode_shift(source_file, srt_file):
+    with open(source_file) as f:
+        lines = parse_lines(f)
+    lines = shift_line(lines, float(sys.argv[4]), int(sys.argv[5]))
+    with open(source_file, 'w') as f:
+        for line in lines:
+            if line.time is None:
+                print(line.text, file=f)
+            else:
+                print(json.dumps([line.text, format_time(line.time, '.')], ensure_ascii=False), file=f)
+    with open(srt_file, 'w') as f:
+        for line in map(get_srt_line, interpolate_lines(lines)):
+            print(line, file=f)
+
+def run_mode_normal(source_file, srt_file):
+    with open(source_file) as f:
+        lines = parse_lines(f)
+    with open(srt_file, 'w') as f:
+        for line in map(get_srt_line, interpolate_lines(lines)):
+            print(line, file=f)
+
 def main():
-    input_buffer = open(sys.argv[1]) if len(sys.argv) > 1 else sys.stdin
-    output_buffer = open(sys.argv[2]) if len(sys.argv) > 2 else sys.stdout
-    for line in map(get_srt_line, interpolate_lines(parse_lines(input_buffer))):
-        print(line, file=output_buffer)
+    source_file = sys.argv[1]
+    srt_file = sys.argv[2]
+    mode = sys.argv[3]
+    if mode == 'normal':
+        run_mode_normal(source_file, srt_file)
+    elif mode == 'shift':
+        run_mode_shift(source_file, srt_file)
 
 if __name__ == '__main__':
     main()

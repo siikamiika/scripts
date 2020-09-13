@@ -148,22 +148,17 @@ def interpolate_lines(lines):
         raise Exception('Extrapolation not supported')
 
 def shift_line(input_lines, time_sec, offset):
-    if offset == 0:
-        return input_lines
-
     if len(input_lines) < 3:
         raise Exception('Input too short')
 
     shift_from = 0
     shift_to = 0
-    debug = None
     for i, line in enumerate(interpolate_lines(copy.deepcopy(input_lines))):
         if line.start_time > time_sec:
             break
         if line.start_time <= time_sec < line.end_time:
-            debug = line
             shift_from = i
-            shift_to = max(0, i + offset)
+            shift_to = max(0, min(len(input_lines) - 1, i + offset))
             break
     else:
         shift_from = max(1, len(input_lines) - 2)

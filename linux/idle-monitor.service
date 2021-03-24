@@ -1,0 +1,11 @@
+[Unit]
+Description=Suspend and then hibernate system when idle
+
+[Service]
+ExecStart=/usr/local/bin/idle-monitor
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+Type=notify
+
+[Install]
+WantedBy=default.target

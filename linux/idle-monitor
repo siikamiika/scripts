@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import time
+import select
+import subprocess
+import systemd.daemon
+
+IDLE_TIMEOUT = 600
+WAKEUP_GRACE_PERIOD = 120
+
+keyboard = open('/dev/input/by-path/platform-i8042-serio-0-event-kbd', 'rb')
+mice = open('/dev/input/mice', 'rb')
+
+systemd.daemon.notify('READY=1')
+
+while True:
+    time.sleep(IDLE_TIMEOUT)
+    r, w, x = select.select([keyboard, mice], [], [], 0)
+    if r:
+        for res in r:
+            res.read1()
+        continue
+    print(f'System was idle for {IDLE_TIMEOUT} seconds')
+    subprocess.call(['systemctl', 'suspend-then-hibernate'])
+    print(f'Waiting for {WAKEUP_GRACE_PERIOD} seconds after wakeup')
+    time.sleep(WAKEUP_GRACE_PERIOD)

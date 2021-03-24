@@ -14,8 +14,8 @@ mice = open('/dev/input/mice', 'rb')
 systemd.daemon.notify('READY=1')
 
 while True:
-    time.sleep(IDLE_TIMEOUT)
-    r, w, x = select.select([keyboard, mice], [], [], 0)
+    time.sleep(5)
+    r, w, x = select.select([keyboard, mice], [], [], IDLE_TIMEOUT)
     if r:
         for res in r:
             res.read1()

@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# /etc/udev/rules.d/backlight.rules:
+# RUN+="/bin/chmod a+w /sys/class/backlight/amdgpu_bl0/brightness"
+
+BASE_PATH="/sys/class/backlight"
+DEVICE="amdgpu_bl0"
+MAX_BRIGHTNESS_PATH="$BASE_PATH/$DEVICE/max_brightness"
+BRIGHTNESS_PATH="$BASE_PATH/$DEVICE/brightness"
+
+step=5
+min_brightness=5
+max_brightness=$(cat "$MAX_BRIGHTNESS_PATH")
+brightness=$(cat "$BRIGHTNESS_PATH")
+
+if [ "$1" == "inc" ]; then
+    let brightness+=step
+    if ((brightness > max_brightness)); then
+        let brightness=max_brightness
+    fi
+elif [ "$1" == "dec" ]; then
+    let brightness-=step
+    if ((brightness < min_brightness)); then
+        let brightness=min_brightness
+    fi
+else
+    echo "Invalid argument. Usage: amdgpu-backlight inc/dec"
+    exit 1
+fi
+
+echo "$brightness"
+echo "$brightness" > "$BRIGHTNESS_PATH"

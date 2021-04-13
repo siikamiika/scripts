@@ -4,7 +4,7 @@ import pyperclip
 from tornado import websocket, web, ioloop
 from pathlib import Path
 import re
-from mpv_python_ipc import MpvProcess
+from python_mpv_jsonipc import MPV
 import sys
 import time
 from os.path import splitext, isfile
@@ -201,21 +201,20 @@ def main():
         print('no subtitles found')
         return
 
-    mp = MpvProcess(args=['--script=~/.mpv/scripts/manual/focusplay.lua'])
+    mp = MPV(script='~/.mpv/scripts/manual/focusplay.lua')
 
-    mp.commandv('loadfile', video)
+    mp.command('loadfile', video)
 
+    @mp.property_observer('time-pos')
     def copysub(_, t):
         if not t:
             return
-        d = mp.get_property_native('sub-delay') or 0
+        d = mp.command('get_property', 'sub-delay') or 0
         text = sub.get_caption(t - d)
         if text:
             #pyperclip.copy(text)
             for c in clients:
                 c.write_message(text)
-
-    mp.observe_property('time-pos', copysub)
 
     app = get_app()
     app.listen(9873)

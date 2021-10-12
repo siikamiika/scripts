@@ -47,18 +47,18 @@ insert into sock_proto (id, name) values
 drop table if exists sock_family;
 create table sock_family (id INTEGER, name TEXT);
 insert into sock_family (id, name) values
-    ('AF_UNSPEC', 0),
-    ('AF_UNIX', 1), -- Unix domain sockets
-    ('AF_INET', 2), -- Internet IP Protocol
-    ('AF_AX25', 3), -- Amateur Radio AX.25
-    ('AF_IPX', 4), -- Novell IPX
-    ('AF_APPLETALK', 5), -- Appletalk DDP
-    ('AF_NETROM', 6), -- Amateur radio NetROM
-    ('AF_BRIDGE', 7), -- Multiprotocol bridge
-    ('AF_AAL5', 8), -- Reserved for Werner's ATM
-    ('AF_X25', 9), -- Reserved for X.25 project
-    ('AF_INET6', 10), -- IP version 6
-    ('AF_MAX', 12) -- For now..
+    (0, 'AF_UNSPEC'),
+    (1, 'AF_UNIX'), -- Unix domain sockets
+    (2, 'AF_INET'), -- Internet IP Protocol
+    (3, 'AF_AX25'), -- Amateur Radio AX.25
+    (4, 'AF_IPX'), -- Novell IPX
+    (5, 'AF_APPLETALK'), -- Appletalk DDP
+    (6, 'AF_NETROM'), -- Amateur radio NetROM
+    (7, 'AF_BRIDGE'), -- Multiprotocol bridge
+    (8, 'AF_AAL5'), -- Reserved for Werner's ATM
+    (9, 'AF_X25'), -- Reserved for X.25 project
+    (10, 'AF_INET6'), -- IP version 6
+    (12, 'AF_MAX') -- For now..
 ;
 
 -- listening ports

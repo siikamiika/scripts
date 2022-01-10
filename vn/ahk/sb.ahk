@@ -11,10 +11,10 @@ XButton1::
         return
     }
     if (state = 0) {
-        send, e
+        send, +e
         state := 1
     } else if (state = 1) {
-        send, j
+        send, +n
         state := 0
     }
     return

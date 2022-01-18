@@ -11,7 +11,7 @@
 (() => {
     let state = 1;
     window.addEventListener('keydown', (e) => {
-        if (e.key === 'F4') {
+        if (e.key === ' ' && e.altKey) {
             if (state === 1) {
                 document.querySelector('li.ita-kd-menuitem:nth-child(1)').click()
                 state = 2;
@@ -19,6 +19,8 @@
                 document.querySelector('li.ita-kd-menuitem:nth-child(2)').click()
                 state = 1;
             }
+        } else if (e.key === 'r' && e.altKey) {
+            document.querySelector('[data-enable-toggle-playback-speed="true"]').querySelectorAll('button').forEach((b) => b.click())
         }
     });
 })();

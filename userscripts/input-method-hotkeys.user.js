@@ -21,6 +21,9 @@
             }
         } else if (e.key === 'r' && e.altKey) {
             document.querySelector('[data-enable-toggle-playback-speed="true"]').querySelectorAll('button').forEach((b) => b.click())
+        } else if (e.key === 'Tab') {
+            e.preventDefault();
+            document.querySelector('textarea').focus()
         }
     });
 })();

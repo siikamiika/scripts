@@ -125,7 +125,7 @@ def parse_json_or_raw(line):
     if line is None:
         return TimedText(None, None)
     try:
-        text, time_str = json.loads(line)
+        text, time_str = json.loads(line.replace('\t', '\\t'))
         return TimedText(text, parse_seconds(time_str))
     except json.decoder.JSONDecodeError:
         return TimedText(line.strip(), None)

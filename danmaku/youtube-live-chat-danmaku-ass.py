@@ -547,8 +547,8 @@ class YoutubeLiveChatReplayParser:
 
 
 def main():
-    input_buffer = sys.stdin if sys.argv[1] == '-' else open(sys.argv[1], 'r')
-    output_buffer = sys.stdout if sys.argv[2] == '-' else open(sys.argv[2], 'w')
+    input_buffer = sys.stdin if sys.argv[1] == '-' else open(sys.argv[1], 'r', encoding="utf-8")
+    output_buffer = sys.stdout if sys.argv[2] == '-' else open(sys.argv[2], 'w', encoding="utf-8")
 
     ass_generator = DanmakuASSGenerator()
     parser = YoutubeLiveChatReplayParser()

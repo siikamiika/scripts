@@ -380,12 +380,12 @@ class CustomEmojiMapper:
         path = self._get_mapped_emoji_path()
         if not os.path.isfile(path):
             return {}
-        with open(path) as f:
+        with open(path, encoding='utf-8') as f:
             return json.loads(f.read())
 
     def _save_mapped_emoji(self):
         path = self._get_mapped_emoji_path()
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write(json.dumps(self._url_by_emoji))
 
     def _get_mapped_emoji_path(self):

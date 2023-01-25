@@ -412,7 +412,13 @@ class YoutubeLiveChatReplayParser:
                     elif best_thumbnail['width'] < thumbnail['width']:
                         best_thumbnail = thumbnail
                 return chr(int(self._custom_emoji_mapper.get_mapping(best_thumbnail['url'])))
-        return ''.join(map(map_run, data['runs']))
+        if 'runs' in data:
+            return ''.join(map(map_run, data['runs']))
+        elif 'simpleText' in data:
+            return data['simpleText']
+        else:
+            raise Exception("Non-implemented renderer_message type {}".format(data))
+            
 
     def _parse_badge_types(self, data):
         badge_types = set()
